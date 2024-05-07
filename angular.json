@@ -7,7 +7,7 @@
       "projectType": "library",
       "root": "projects/common",
       "sourceRoot": "projects/common/src",
-      "prefix": "lib",
+      "prefix": "n1h",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:ng-packagr",
@@ -41,7 +41,7 @@
       "schematics": {},
       "root": "projects/example",
       "sourceRoot": "projects/example/src",
-      "prefix": "app",
+      "prefix": "ex",
       "architect": {
         "build": {
           "builder": "@angular-devkit/build-angular:application",
