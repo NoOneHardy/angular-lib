@@ -11,31 +11,20 @@ jobs:
   build:
     name: build
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Setup Node
         uses: actions/setup-node@v3
       - uses: actions/checkout@v4
         with:
           node-version: 16
+          registry-url: https://npm.pkg.github.com/
       - run: npm i
       - run: npm run build-common
-      - run: cd ./dist/common && npm pack
-
-  publish-gpr:
-    needs: build
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - uses: actions/setup-node@v3
-      - uses: actions/checkout@v4
-        with:
-          node-version: 16
-          registry-url: https://npm.pkg.github.com/
-      - run: cd /home/runner/work/angular-lib/angular-lib
-      - run: npm i
       - run: cd ./dist/common
+      - run: npm pack
       - run: npm publish
         env:
           NODE_AUTH_TOKEN: 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
