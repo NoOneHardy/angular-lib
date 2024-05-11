@@ -18,6 +18,7 @@ jobs:
         with:
           node-version: 16
       - run: cd /home/runner/work/angular-lib/angular-lib
+      - run: ls
       - run: npm ci
       - run: ng build common
       - run: cd ./dist/common && npm pack
