@@ -1,8 +1,8 @@
 {
-  "name": "@n1h/common",
+  "name": "@noonehardy/common",
   "repository": {
     "type": "git",
-    "url": "https://github.com/NoOneHardy/angular-lib.git"
+    "url": "https://github.com/noonehardy/angular-lib.git"
   },
   "version": "0.0.1",
   "peerDependencies": {
