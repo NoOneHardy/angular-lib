@@ -22,7 +22,7 @@ jobs:
           registry-url: 'https://npm.pkg.github.com'
           scope: '@noonehardy'
       - uses: actions/checkout@v4
-      - run: npm ci
+      - run: npm ci --omit=optional
       - run: npm run build-common
       - run: cd ./dist/common && npm pack && npm publish
         env:

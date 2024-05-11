@@ -2,6 +2,20 @@
 
 This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.2.1.
 
+## npm configuration
+
+Add GitHub registry
+
+```shell
+npm config set @noonehardy:registry=https://npm.pkg.github.com
+```
+
+Add credentials for GitHub registry
+
+```shell
+npm config set //npm.pkg.github.com/:_authToken={{ GitHub token }}
+```
+
 ## Development server
 
 Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
