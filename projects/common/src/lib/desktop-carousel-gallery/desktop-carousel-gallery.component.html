@@ -1,0 +1,4 @@
+<div class="wrapper" (wheel)="onScroll($event)" *ngIf="active && display">
+  <img [ngSrc]="active.url" height="1" width="1" alt class="background" priority>
+  <n1h-image *ngFor="let d of display; index as i" [@rotate]="states[i]" [image]="d" />
+</div>

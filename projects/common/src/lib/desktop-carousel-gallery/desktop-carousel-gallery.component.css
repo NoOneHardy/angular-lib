@@ -1,0 +1,25 @@
+.wrapper {
+  display: flex;
+  justify-content: center;
+  overflow-x: hidden;
+  width: 100%;
+  height: 100%;
+  position: relative;
+  box-shadow: inset 0 0 .625em #0004;
+  border-radius: 0.9em;
+
+  > .background {
+    position: absolute;
+    object-fit: cover;
+    object-position: center;
+    width: 100%;
+    height: 100%;
+    filter: blur(.3em);
+  }
+
+  n1h-image {
+    position: absolute;
+    width: 30%;
+    height: 85%;
+  }
+}
