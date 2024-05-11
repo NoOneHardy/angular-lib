@@ -26,4 +26,4 @@ jobs:
       - run: npm run build-common
       - run: cd ./dist/common && npm pack && npm publish
         env:
-          NODE_AUTH_TOKEN: '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'
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
