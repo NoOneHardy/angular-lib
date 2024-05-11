@@ -17,9 +17,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           node-version: 16
-      - run: cd /home/runner/work/angular-lib/angular-lib
-      - run: ls
-      - run: npm ci
+      - run: npm i
       - run: ng build common
       - run: cd ./dist/common && npm pack
 
@@ -36,7 +34,7 @@ jobs:
           node-version: 16
           registry-url: https://npm.pkg.github.com/
       - run: cd /home/runner/work/angular-lib/angular-lib
-      - run: npm ci
+      - run: npm i
       - run: cd ./dist/common
       - run: npm publish
         env:
