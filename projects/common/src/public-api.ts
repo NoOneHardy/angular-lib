@@ -2,5 +2,5 @@
  * Public API Surface of common
  */
 
-export * from './lib/common.service';
-export * from './lib/common.component';
+export {DesktopCarouselGalleryComponent} from './lib/desktop-carousel-gallery/desktop-carousel-gallery.component'
+export {Image} from './lib/desktop-carousel-gallery/shared/image'
