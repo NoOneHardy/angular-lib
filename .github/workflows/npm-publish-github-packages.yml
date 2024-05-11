@@ -23,8 +23,6 @@ jobs:
           registry-url: https://npm.pkg.github.com/
       - run: npm i
       - run: npm run build-common
-      - run: cd ./dist/common
-      - run: npm pack
-      - run: npm publish
+      - run: cd ./dist/common && npm pack && npm publish
         env:
           NODE_AUTH_TOKEN: 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
