@@ -26,8 +26,7 @@ export class DesktopCarouselGalleryComponent implements OnInit {
 
   private auto?: Subscription
   private index = 0
-  private indexOfLeftItem = 0
-  private indexOfRightItem = 4
+  private leftDisplayIndex = 0
   private timeout?: number
 
   display: Image[] = []
@@ -41,9 +40,13 @@ export class DesktopCarouselGalleryComponent implements OnInit {
   ]
 
   ngOnInit() {
+    if (this.images.length < 5) {
+      console.error(`DesktopCarouselGalleryComponent: 'images' requires a length of at least '5'. Current length: '${this.images.length}'`)
+      return
+    }
     this.auto = this.refreshSubscription()
-    for (this.index; this.index < 5; this.index++) {
-      this.display.push(this.images[this.index])
+    for (let i = 0; i < 5; i++) {
+      this.display.push(this.images[i])
     }
     this.active = this.display[2]
   }
@@ -55,38 +58,45 @@ export class DesktopCarouselGalleryComponent implements OnInit {
   }
 
   next() {
-    this.checkBounds()
-    this.display[this.indexOfLeftItem++] = this.images[this.index++]
-    this.indexOfRightItem++
+    // Set index to index of this.display's first item in this.images
+    this.index = this.checkImagesBounds(this.index + 1)
+    this.leftDisplayIndex = this.checkDisplayBounds(this.leftDisplayIndex + 1)
 
-    // Add 2 to get the image in the middle
-    if (this.indexOfLeftItem + 2 >= this.display.length) this.active = this.display[this.indexOfLeftItem + 2 - this.display.length]
-    else this.active = this.display[this.indexOfLeftItem + 2]
+    // Set right item to next image in this.images
+    this.display[this.checkDisplayBounds(this.leftDisplayIndex + 4)] = this.images[this.checkImagesBounds(this.index + 4)]
+
+    // Set active image
+    this.active = this.images[this.checkImagesBounds(this.index + 2)]
 
     this.states.unshift(this.states[4])
     this.states.pop()
   }
 
   previous() {
-    this.checkBounds()
-    this.display[this.indexOfRightItem--] = this.images[this.index--]
-    this.indexOfLeftItem--
+    // Set index to index of this.display's first item in this.images
+    this.index = this.checkImagesBounds(this.index - 1)
+    this.leftDisplayIndex = this.checkDisplayBounds(this.leftDisplayIndex - 1)
 
-    // Add 2 to get the image in the middle
-    if (this.indexOfLeftItem + 2 >= this.display.length) this.active = this.display[this.indexOfLeftItem + 2 - this.display.length]
-    else this.active = this.display[this.indexOfLeftItem + 2]
+    // Set left item to next image in this.images
+    this.display[this.leftDisplayIndex] = this.images[this.index]
+
+    // Set active image
+    this.active = this.images[this.checkImagesBounds(this.index + 2)]
 
     this.states.push(this.states[0])
     this.states.shift()
   }
 
-  checkBounds() {
-    if (this.indexOfLeftItem == -1) this.indexOfLeftItem = this.display.length - 1
-    if (this.indexOfRightItem == -1) this.indexOfRightItem = this.display.length - 1
-    if (this.indexOfLeftItem == this.display.length) this.indexOfLeftItem = 0
-    if (this.indexOfRightItem == this.display.length) this.indexOfRightItem = 0
-    if (this.index == -1) this.index = this.images.length - 1
-    if (this.index == this.images.length) this.index = 0
+  checkImagesBounds(index: number): number {
+    if (index < 0) return this.checkImagesBounds(index + this.images.length)
+    if (index >= this.images.length) return this.checkImagesBounds(index - this.images.length)
+    return index
+  }
+
+  checkDisplayBounds(index: number): number {
+    if (index < 0) return this.checkDisplayBounds(index + this.display.length)
+    if (index >= this.display.length) return this.checkDisplayBounds(index - this.display.length)
+    return index
   }
 
   onScroll(e: WheelEvent) {
