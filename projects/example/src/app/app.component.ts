@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import {DesktopCarouselGalleryComponent, Image} from 'common'
+import {DesktopCarouselGalleryComponent, Image} from '@noonehardy/common'
 
 @Component({
   selector: 'app-root',
@@ -40,6 +40,16 @@ export class AppComponent {
       name: 'Iris',
       url: 'https://media.istockphoto.com/id/1322220448/photo/abstract-digital-futuristic-eye.jpg?s=612x612&w=0&k=20&c=oAMmGJxyTTNW0XcttULhkp5IxfW9ZTaoVdVwI2KwK5s=',
       desc: 'The colorful part of the eye'
+    },
+    {
+      name: 'Gym',
+      url: 'https://www.hussle.com/blog/wp-content/uploads/2020/12/Gym-structure-1080x675.png',
+      desc: 'Do not skip leg day'
+    },
+    {
+      name: 'Food',
+      url: 'https://www.eatclub.tv/wp-content/uploads/2023/07/unterschied-junkfood-fast-food-titel.jpg',
+      desc: 'Portable energy'
     }
   ];
 }
