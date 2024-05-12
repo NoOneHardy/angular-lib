@@ -1,9 +1,10 @@
-import {Component, Input, OnInit} from '@angular/core'
+import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core'
 import {interval, Subscription} from 'rxjs'
 import {Image} from './shared/image'
 import {NgForOf, NgIf, NgOptimizedImage} from '@angular/common'
 import {ImageComponent} from './image/image.component'
 import {rotate} from './shared/animations'
+import {ImageLoaderService} from '../shared/services/image-loader.service'
 
 @Component({
   selector: 'n1h-desktop-carousel-gallery',
@@ -23,11 +24,13 @@ import {rotate} from './shared/animations'
 export class DesktopCarouselGalleryComponent implements OnInit {
   @Input() images: Image[] = []
   @Input() interval: number = 5000
+  @Output() loaded = new EventEmitter<void>()
 
   private auto?: Subscription
   private index = 0
   private leftDisplayIndex = 0
   private timeout?: number
+  private imageLoaderService = inject(ImageLoaderService)
 
   display: Image[] = []
   active?: Image
@@ -49,6 +52,13 @@ export class DesktopCarouselGalleryComponent implements OnInit {
       this.display.push(this.images[i])
     }
     this.active = this.display[2]
+
+    const sub = this.imageLoaderService.imagesLoading$.subscribe(count => {
+      if (count == 0) {
+        this.loaded.emit()
+        sub.unsubscribe()
+      }
+    })
   }
 
   refreshSubscription(): Subscription {

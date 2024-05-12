@@ -1,5 +1,5 @@
-import { Component } from '@angular/core';
-import { RouterOutlet } from '@angular/router';
+import {Component} from '@angular/core';
+import {RouterOutlet} from '@angular/router';
 import {DesktopCarouselGalleryComponent, Image} from '@noonehardy/common'
 
 @Component({
@@ -52,4 +52,8 @@ export class AppComponent {
       desc: 'Portable energy'
     }
   ];
+
+  onLoad() {
+    console.log('Loaded')
+  }
 }
