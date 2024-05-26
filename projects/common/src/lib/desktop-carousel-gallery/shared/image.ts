@@ -1,5 +1,6 @@
 export interface Image {
   name: string
-  url: string
+  src: string
+  link: string
   desc: string
 }

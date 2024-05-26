@@ -1,7 +1,8 @@
-<div class="image" *ngIf="image">
-  <img [ngSrc]="image.url" height="1" width="1" alt img>
+<div class="image" *ngIf="image" [routerLink]="image.link">
+  <img [ngSrc]="image.src" height="1" width="1" alt img>
   <div class="content">
     <h1>{{ image.name }}</h1>
     <span>{{ image.desc }}</span>
+    <span class="link">Weiter Bilder <span class="material-icons">arrow_forward</span></span>
   </div>
 </div>
