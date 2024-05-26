@@ -1,3 +1,6 @@
+@import '../../shared/styles.css';
+@import url(https://fonts.googleapis.com/icon?family=Material+Icons);
+
 .image {
   display: flex;
   flex-direction: column;
@@ -11,6 +14,11 @@
   text-shadow: 0 0 .3em #000;
   position: relative;
   overflow: hidden;
+  transition: transform .2s ease-in-out;
+
+  &:hover {
+    transform: translateY(-2.5%);
+  }
 
   img {
     position: absolute;
@@ -25,5 +33,27 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    text-align: center;
+    gap: .5em;
+
+    h1 {
+      margin-bottom: 1em;
+    }
+
+    .link {
+      display: flex;
+      flex-direction: row;
+      align-items: center;
+      cursor: pointer;
+      white-space: nowrap;
+
+      .material-icons {
+        transition: margin-left .2s ease-in-out;
+      }
+
+      &:hover .material-icons {
+        margin-left: 10%;
+      }
+    }
   }
 }

@@ -1,5 +1,5 @@
 import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core'
-import {interval, Subscription} from 'rxjs'
+import {interval, Subscription, timeout} from 'rxjs'
 import {Image} from './shared/image'
 import {NgForOf, NgIf, NgOptimizedImage} from '@angular/common'
 import {ImageComponent} from './image/image.component'
@@ -47,7 +47,7 @@ export class DesktopCarouselGalleryComponent implements OnInit {
       console.error(`DesktopCarouselGalleryComponent: 'images' requires a length of at least '5'. Current length: '${this.images.length}'`)
       return
     }
-    this.auto = this.refreshSubscription()
+
     for (let i = 0; i < 5; i++) {
       this.display.push(this.images[i])
     }
@@ -56,6 +56,9 @@ export class DesktopCarouselGalleryComponent implements OnInit {
     const sub = this.imageLoaderService.imagesLoading$.subscribe(count => {
       if (count == 0) {
         this.loaded.emit()
+
+        // Start animation when all images are loaded
+        this.auto = this.refreshSubscription()
         sub.unsubscribe()
       }
     })
@@ -120,5 +123,25 @@ export class DesktopCarouselGalleryComponent implements OnInit {
     this.timeout = setTimeout(() => {
       this.auto = this.refreshSubscription()
     }, 5000)
+  }
+
+  onMouseEnter(e: MouseEvent) {
+    e.preventDefault()
+    if (e.target instanceof HTMLElement && e.target.classList.contains('center')) {
+      this.auto?.unsubscribe()
+      clearTimeout(this.timeout)
+
+      this.timeout = setTimeout(() => {
+        this.auto = this.refreshSubscription()
+      }, 20000)
+    }
+  }
+
+  onMouseLeave(e: MouseEvent) {
+    e.preventDefault()
+    this.auto?.unsubscribe()
+    clearTimeout(this.timeout)
+
+    this.auto = this.refreshSubscription()
   }
 }

@@ -2,6 +2,7 @@ import {Component, Input} from '@angular/core';
 import {Image} from '../shared/image'
 import {NgIf, NgOptimizedImage} from '@angular/common'
 import {ImgLoaderDirective} from '../../shared/directives/img-loader.directive'
+import {RouterLink} from '@angular/router'
 
 @Component({
   selector: 'n1h-image',
@@ -9,7 +10,8 @@ import {ImgLoaderDirective} from '../../shared/directives/img-loader.directive'
   imports: [
     NgIf,
     NgOptimizedImage,
-    ImgLoaderDirective
+    ImgLoaderDirective,
+    RouterLink
   ],
   templateUrl: './image.component.html',
   styleUrl: './image.component.css'
