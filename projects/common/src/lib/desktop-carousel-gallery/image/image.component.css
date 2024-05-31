@@ -14,10 +14,11 @@
   text-shadow: 0 0 .3em #000;
   position: relative;
   overflow: hidden;
-  transition: transform .2s ease-in-out;
+  transition: text-shadow .2s ease-in-out;
+  cursor: pointer;
 
   &:hover {
-    transform: translateY(-2.5%);
+    text-shadow: 0 0 .4em #000;
   }
 
   img {
@@ -46,13 +47,20 @@
       align-items: center;
       cursor: pointer;
       white-space: nowrap;
+      position: relative;
 
-      .material-icons {
-        transition: margin-left .2s ease-in-out;
+      .hover {
+        display: block;
+        height: .05em;
+        background-color: var(--gallery-color);
+        transition: width .2s ease-in-out;
+        position: absolute;
+        bottom: -.05em;
+        width: 0;
       }
 
-      &:hover .material-icons {
-        margin-left: 10%;
+      &:hover .hover {
+        width: 100%;
       }
     }
   }

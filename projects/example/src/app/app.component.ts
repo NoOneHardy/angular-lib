@@ -1,6 +1,6 @@
 import {Component} from '@angular/core';
 import {RouterLink, RouterOutlet} from '@angular/router';
-import {DesktopCarouselGalleryComponent, Image} from '@noonehardy/common'
+import {DesktopCarouselGalleryComponent} from '@noonehardy/common'
 
 @Component({
   selector: 'app-root',

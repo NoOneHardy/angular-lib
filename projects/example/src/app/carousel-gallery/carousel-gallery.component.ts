@@ -57,7 +57,7 @@ export class CarouselGalleryComponent {
     {
       name: 'Food',
       src: 'https://www.eatclub.tv/wp-content/uploads/2023/07/unterschied-junkfood-fast-food-titel.jpg',
-      desc: 'Portable energy',
+      desc: '2007-06-21T00:00:00',
       link: '/'
     }
   ];

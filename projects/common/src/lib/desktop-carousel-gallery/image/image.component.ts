@@ -1,6 +1,6 @@
-import {Component, Input} from '@angular/core';
+import {AfterViewInit, Component, Input, OnInit} from '@angular/core';
 import {Image} from '../shared/image'
-import {NgIf, NgOptimizedImage} from '@angular/common'
+import {DatePipe, NgIf, NgOptimizedImage} from '@angular/common'
 import {ImgLoaderDirective} from '../../shared/directives/img-loader.directive'
 import {RouterLink} from '@angular/router'
 
@@ -11,11 +11,17 @@ import {RouterLink} from '@angular/router'
     NgIf,
     NgOptimizedImage,
     ImgLoaderDirective,
-    RouterLink
+    RouterLink,
+    DatePipe
   ],
   templateUrl: './image.component.html',
   styleUrl: './image.component.css'
 })
-export class ImageComponent {
+export class ImageComponent implements OnInit {
   @Input() image?: Image
+  @Input() date?: Date
+
+  ngOnInit() {
+    if (this.image && (new Date(this.image.desc)).toString() != 'Invalid Date') this.date = new Date(this.image.desc)
+  }
 }
