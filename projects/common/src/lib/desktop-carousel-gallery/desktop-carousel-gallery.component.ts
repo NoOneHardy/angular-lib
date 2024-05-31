@@ -1,5 +1,5 @@
 import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core'
-import {interval, Subscription, timeout} from 'rxjs'
+import {interval, Subscription} from 'rxjs'
 import {Image} from './shared/image'
 import {NgForOf, NgIf, NgOptimizedImage} from '@angular/common'
 import {ImageComponent} from './image/image.component'
@@ -60,6 +60,16 @@ export class DesktopCarouselGalleryComponent implements OnInit {
         // Start animation when all images are loaded
         this.auto = this.refreshSubscription()
         sub.unsubscribe()
+      }
+    })
+
+    document.addEventListener('keyup', e => {
+      if (e.key) {
+        if (e.key === 'ArrowRight') {
+          this.next()
+        } else if (e.key === 'ArrowLeft') {
+          this.previous()
+        }
       }
     })
   }
