@@ -3,6 +3,7 @@
   <n1h-image *ngFor="let d of display; index as i"
              [@rotate]="states[i]"
              [image]="d"
+             [invisible]="states[i] === 'pos1' || states[i] === 'pos5'"
              [class.center]="states[i] === 'pos3'"
              (mouseenter)="onMouseEnter($event)"
              (mouseleave)="onMouseLeave($event)"/>
