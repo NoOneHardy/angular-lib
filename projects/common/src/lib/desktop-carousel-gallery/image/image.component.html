@@ -1,5 +1,6 @@
 <div class="image" *ngIf="image" [routerLink]="image.link">
-  <img [ngSrc]="image.src" height="1" width="1" alt img>
+  <img *ngIf="!invisible" [ngSrc]="image.src" height="1" width="1" alt img>
+  <img *ngIf="invisible" [ngSrc]="image.src" height="1" width="1" alt>
   <div class="content">
     <h1>{{ image.name }}</h1>
     <span *ngIf="date">{{ date | date:'dd.MM.yyyy' }}</span>

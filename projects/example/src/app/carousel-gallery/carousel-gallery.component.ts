@@ -1,16 +1,20 @@
 import { Component } from '@angular/core';
 import {DesktopCarouselGalleryComponent, Image} from '@noonehardy/common'
+import {NgIf} from '@angular/common'
 
 @Component({
   selector: 'ex-carousel-gallery',
   standalone: true,
   imports: [
-    DesktopCarouselGalleryComponent
+    DesktopCarouselGalleryComponent,
+    NgIf
   ],
   templateUrl: './carousel-gallery.component.html',
   styleUrl: './carousel-gallery.component.css'
 })
 export class CarouselGalleryComponent {
+  loading = true
+
   images: Image[] = [
     {
       name: 'Rain',
@@ -63,6 +67,6 @@ export class CarouselGalleryComponent {
   ];
 
   onLoad() {
-    console.log('Loaded')
+    this.loading = false
   }
 }
