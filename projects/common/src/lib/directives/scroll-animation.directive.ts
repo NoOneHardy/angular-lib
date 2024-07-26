@@ -18,9 +18,10 @@ export class ScrollAnimationDirective implements AfterViewInit {
 
       const factory = this.builder.build(animation)
       const player = factory.create(this.el.nativeElement)
+      if (entry.isIntersecting) this.builder.build(this.scrollOut(this.direction)).create(this.el.nativeElement).play()
       setTimeout(() => {
         player.play()
-      }, this.delay)
+      }, entry.isIntersecting ? this.delay : 0)
     })
   })
 
@@ -31,6 +32,7 @@ export class ScrollAnimationDirective implements AfterViewInit {
   private scrollIn(direction: Direction): AnimationMetadata[] {
     return [
       this.hidden(direction),
+      animate('0ms ease-in-out', this.prepared(direction)),
       animate(`${this.duration}ms ease-in-out`, this.visible(direction))
     ]
   }
@@ -38,7 +40,7 @@ export class ScrollAnimationDirective implements AfterViewInit {
   private scrollOut(direction: Direction): AnimationMetadata[] {
     return [
       this.visible(direction),
-      animate(`1ms ease-in-out`, this.hidden(direction))
+      animate('0ms ease-in-out', this.hidden(direction))
     ]
   }
 
@@ -49,9 +51,16 @@ export class ScrollAnimationDirective implements AfterViewInit {
     })
   }
 
-  private hidden(direction: Direction) {
+  private prepared(direction: Direction) {
     return style({
       'transform': direction === 'vertical' ? 'translateY(2.5em)' : 'translateX(-2.5em)',
+      'opacity': 0
+    })
+  }
+
+  private hidden(direction: Direction) {
+    return style({
+      'transform': direction === 'vertical' ? 'translateY(0)' : 'translateX(0)',
       'opacity': 0
     })
   }
