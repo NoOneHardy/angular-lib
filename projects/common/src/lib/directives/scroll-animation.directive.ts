@@ -8,18 +8,19 @@ import {animate, AnimationBuilder, AnimationMetadata, style} from '@angular/anim
 export class ScrollAnimationDirective implements AfterViewInit {
   @Input() delay: number = 0
   @Input() duration: number = 500
+  @Input() direction: Direction = 'horizontal'
 
-  private el = inject(ElementRef)
+  private el: ElementRef<HTMLElement> = inject(ElementRef)
   private builder = inject(AnimationBuilder)
   private observer = new IntersectionObserver(entries => {
     entries.forEach(entry => {
-      const animation = entry.isIntersecting ? this.scrollIn() : this.scrollOut(this.duration)
+      const animation = entry.isIntersecting ? this.scrollIn(this.direction) : this.scrollOut(this.direction)
 
       const factory = this.builder.build(animation)
       const player = factory.create(this.el.nativeElement)
-
-      this.builder.build(this.scrollOut(0)).create(this.el.nativeElement).play()
-      setTimeout(() => player.play(), this.delay)
+      setTimeout(() => {
+        player.play()
+      }, this.delay)
     })
   })
 
@@ -27,27 +28,33 @@ export class ScrollAnimationDirective implements AfterViewInit {
     this.observer.observe(this.el.nativeElement)
   }
 
-  private scrollIn(): AnimationMetadata[] {
+  private scrollIn(direction: Direction): AnimationMetadata[] {
     return [
-      this.hidden,
-      animate(`${this.duration}ms ease-in-out`, this.visible)
+      this.hidden(direction),
+      animate(`${this.duration}ms ease-in-out`, this.visible(direction))
     ]
   }
 
-  private scrollOut(duration: number): AnimationMetadata[] {
+  private scrollOut(direction: Direction): AnimationMetadata[] {
     return [
-      this.visible,
-      animate(`${duration}ms ease-in-out`, this.hidden)
+      this.visible(direction),
+      animate(`1ms ease-in-out`, this.hidden(direction))
     ]
   }
 
-  private visible = style({
-    'transform': 'translateX(0)',
-    'opacity': 1
-  })
+  private visible(direction: Direction) {
+    return style({
+      'transform': direction === 'vertical' ? 'translateY(0)' : 'translateX(0)',
+      'opacity': 1
+    })
+  }
 
-  private hidden = style({
-    'transform': 'translateX(-2.5em)',
-    'opacity': 0
-  })
+  private hidden(direction: Direction) {
+    return style({
+      'transform': direction === 'vertical' ? 'translateY(2.5em)' : 'translateX(-2.5em)',
+      'opacity': 0
+    })
+  }
 }
+
+type Direction = 'vertical' | 'horizontal'
