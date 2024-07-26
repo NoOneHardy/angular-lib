@@ -1,17 +1,22 @@
-import { Component } from '@angular/core';
-import {ScrollAnimationDirective} from '@noonehardy/common'
-import {NgForOf} from '@angular/common'
+import {Component, inject} from '@angular/core';
+import {ImageLoaderService, ImgLoaderDirective, ScrollAnimationDirective} from '@noonehardy/common'
+import {NgForOf, NgIf} from '@angular/common'
+import {toSignal} from '@angular/core/rxjs-interop'
 
 @Component({
   selector: 'ex-scroll',
   standalone: true,
   imports: [
     ScrollAnimationDirective,
-    NgForOf
+    NgForOf,
+    ImgLoaderDirective,
+    NgIf
   ],
   templateUrl: './scroll.component.html',
   styleUrl: './scroll.component.css'
 })
 export class ScrollComponent {
   items: number[] = [...Array(100).keys()]
+
+  imagesLoaded = toSignal(inject(ImageLoaderService).imagesLoading$)
 }
