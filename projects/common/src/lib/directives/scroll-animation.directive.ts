@@ -23,6 +23,8 @@ export class ScrollAnimationDirective implements AfterViewInit {
         player.play()
       }, entry.isIntersecting ? this.delay : 0)
     })
+  }, {
+    rootMargin: '40px'
   })
 
   ngAfterViewInit() {
@@ -53,7 +55,7 @@ export class ScrollAnimationDirective implements AfterViewInit {
 
   private prepared(direction: Direction) {
     return style({
-      'transform': direction === 'vertical' ? 'translateY(2.5em)' : 'translateX(-2.5em)',
+      'transform': direction === 'vertical' ? 'translateY(40px)' : 'translateX(-40px)',
       'opacity': 0
     })
   }
