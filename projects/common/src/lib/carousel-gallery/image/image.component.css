@@ -1,6 +1,49 @@
 @import '../../shared/styles.css';
 @import url(https://fonts.googleapis.com/icon?family=Material+Icons);
 
+:host {
+  display: block;
+  width: 100%;
+  max-width: 32em;
+  max-height: 45em;
+  height: 100%;
+
+  transition-property: top, left, transform, opacity;
+  transition-duration: .75s, .75s, .75s, .75s;
+
+  &.pos1 {
+    top: 50%;
+    left: 0;
+    transform: scale(.5) translate(calc(-100% / .5), calc(-50% / .5));
+    opacity: 0;
+  }
+
+  &.pos2 {
+    top: 50%;
+    left: 30%;
+    transform: scale(.75) translate(calc(-100% / .75), calc(-50% / .75));
+  }
+
+  &.pos3 {
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  &.pos4 {
+    top: 50%;
+    left: 70%;
+    transform: scale(.75) translate(0, calc(-50% / .75));
+  }
+
+  &.pos5 {
+    top: 50%;
+    left: 100%;
+    transform: scale(.5) translate(0, calc(-50% / .5));
+    opacity: 0;
+  }
+}
+
 .image {
   display: flex;
   flex-direction: column;
@@ -63,5 +106,34 @@
         width: 100%;
       }
     }
+  }
+}
+
+@media screen and (max-width: 900px) {
+  :host {
+    max-width: 31em;
+
+    &.pos2 {
+      left: 15%;
+    }
+
+    &.pos4 {
+      left: 85%;
+    }
+  }
+}
+
+@media screen and (max-width: 600px){
+  :host {
+    max-width: calc(100% - 3em);
+
+    &.pos2 {
+      left: 0;
+    }
+
+    &.pos4 {
+      left: 100%;
+    }
+
   }
 }

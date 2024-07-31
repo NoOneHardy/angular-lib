@@ -40,8 +40,5 @@
     "karma-jasmine-html-reporter": "~2.1.0",
     "ng-packagr": "^17.3.0",
     "typescript": "~5.3.2"
-  },
-  "optionalDependencies": {
-    "@noonehardy/common": "file:dist/common/noonehardy-common-0.0.13.tgz"
   }
 }

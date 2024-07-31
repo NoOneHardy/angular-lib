@@ -1,7 +1,7 @@
-<div class="wrapper" (wheel)="onScroll($event)" *ngIf="active && display">
+<div class="wrapper" (wheel)="onScroll($event)" (touchstart)="swipe($event, 'start')" (touchend)="swipe($event, 'end')" *ngIf="active && display">
   <img [ngSrc]="active.src" height="1" width="1" alt class="background">
   <n1h-image *ngFor="let d of display; index as i"
-             [@rotate]="states[i]"
+             [class]="states[i]"
              [image]="d"
              [invisible]="states[i] === 'pos1' || states[i] === 'pos5'"
              [class.center]="states[i] === 'pos3'"

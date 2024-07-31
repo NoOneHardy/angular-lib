@@ -1,5 +1,5 @@
 import {Component, inject} from '@angular/core';
-import {ImageLoaderService, ImgLoaderDirective, ScrollAnimationDirective} from '@noonehardy/common'
+import {ImageLoaderService, ImgLoaderDirective, ScrollAnimationDirective} from '../../../../common/src/public-api'
 import {NgForOf, NgIf} from '@angular/common'
 import {toSignal} from '@angular/core/rxjs-interop'
 

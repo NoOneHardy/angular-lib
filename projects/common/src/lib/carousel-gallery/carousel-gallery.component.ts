@@ -3,14 +3,11 @@ import {interval, Subscription} from 'rxjs'
 import {Image} from './shared/image'
 import {NgForOf, NgIf, NgOptimizedImage} from '@angular/common'
 import {ImageComponent} from './image/image.component'
-import {rotate} from './shared/animations'
 import {ImageLoaderService} from '../shared/services/image-loader.service'
+import {SwipeService} from '../services/swipe.service'
 
 @Component({
   selector: 'n1h-desktop-carousel-gallery',
-  animations: [
-    rotate
-  ],
   standalone: true,
   imports: [
     NgOptimizedImage,
@@ -18,10 +15,10 @@ import {ImageLoaderService} from '../shared/services/image-loader.service'
     NgForOf,
     NgIf
   ],
-  templateUrl: './desktop-carousel-gallery.component.html',
-  styleUrl: './desktop-carousel-gallery.component.css'
+  templateUrl: './carousel-gallery.component.html',
+  styleUrl: './carousel-gallery.component.css'
 })
-export class DesktopCarouselGalleryComponent implements OnInit {
+export class CarouselGalleryComponent implements OnInit {
   @Input() images: Image[] = []
   @Input() interval: number = 5000
   @Output() loaded = new EventEmitter<void>()
@@ -31,6 +28,7 @@ export class DesktopCarouselGalleryComponent implements OnInit {
   private leftDisplayIndex = 0
   private timeout?: number
   private imageLoaderService = inject(ImageLoaderService)
+  private swipeService = inject(SwipeService)
 
   display: Image[] = []
   active?: Image
@@ -71,6 +69,11 @@ export class DesktopCarouselGalleryComponent implements OnInit {
           this.previous()
         }
       }
+    })
+
+    this.swipeService.swipeDir$.subscribe(dir => {
+      if (dir > 0) this.previous()
+      if (dir < 0) this.next()
     })
   }
 
@@ -153,5 +156,9 @@ export class DesktopCarouselGalleryComponent implements OnInit {
     clearTimeout(this.timeout)
 
     this.auto = this.refreshSubscription()
+  }
+
+  swipe(e: TouchEvent, when: 'start' | 'end') {
+    this.swipeService.swipe(e, when)
   }
 }
