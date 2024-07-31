@@ -1,18 +1,18 @@
 import { Component } from '@angular/core';
-import {DesktopCarouselGalleryComponent, Image} from '@noonehardy/common'
+import {CarouselGalleryComponent, Image} from '../../../../common/src/public-api'
 import {NgIf} from '@angular/common'
 
 @Component({
   selector: 'ex-carousel-gallery',
   standalone: true,
   imports: [
-    DesktopCarouselGalleryComponent,
+    CarouselGalleryComponent,
     NgIf
   ],
-  templateUrl: './carousel-gallery.component.html',
-  styleUrl: './carousel-gallery.component.css'
+  templateUrl: './carousel-gallery-display.component.html',
+  styleUrl: './carousel-gallery-display.component.css'
 })
-export class CarouselGalleryComponent {
+export class CarouselGalleryDisplayComponent {
   loading = true
 
   images: Image[] = [
