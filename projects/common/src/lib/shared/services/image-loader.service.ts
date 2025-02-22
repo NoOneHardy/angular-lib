@@ -26,4 +26,18 @@ export class ImageLoaderService {
       this._imagesLoading.next(this.imagesLoading)
     }
   }
+
+  removeImage(img: HTMLElement) {
+    if (this.images.has(img)) {
+      this.images.delete(img)
+      this.imagesLoading--
+      this._imagesLoading.next(this.imagesLoading)
+    }
+  }
+
+  reset() {
+    this.images.clear()
+    this.imagesLoading = 0
+    this._imagesLoading.next(this.imagesLoading)
+  }
 }

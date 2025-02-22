@@ -1,22 +1,29 @@
-import {Directive, ElementRef, HostListener} from '@angular/core'
+import {AfterViewInit, Directive, ElementRef, HostListener, inject, OnDestroy} from '@angular/core'
 import {ImageLoaderService} from '../services/image-loader.service'
 
 @Directive({
   standalone: true,
   selector: '[img]'
 })
-export class ImgLoaderDirective {
-  constructor(private el: ElementRef, private imageLoaderService: ImageLoaderService) {
-    imageLoaderService.imageLoading(el.nativeElement)
-  }
+export class ImgLoaderDirective implements AfterViewInit, OnDestroy {
+  private el = inject(ElementRef)
+  private imgLoader = inject(ImageLoaderService)
 
   @HostListener('load')
   onLoad() {
-    this.imageLoaderService.imageLoadedOrError(this.el.nativeElement)
+    this.imgLoader.imageLoadedOrError(this.el.nativeElement)
   }
 
   @HostListener('error')
   onError() {
-    this.imageLoaderService.imageLoadedOrError(this.el.nativeElement)
+    this.imgLoader.imageLoadedOrError(this.el.nativeElement)
+  }
+
+  ngAfterViewInit(): void {
+    this.imgLoader.imageLoading(this.el.nativeElement)
+  }
+
+  ngOnDestroy(): void {
+    this.imgLoader.removeImage(this.el.nativeElement)
   }
 }
