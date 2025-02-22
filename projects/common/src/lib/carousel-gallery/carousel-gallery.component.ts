@@ -41,6 +41,8 @@ export class CarouselGalleryComponent implements OnInit {
   ]
 
   ngOnInit() {
+    this.imageLoaderService.reset()
+
     if (this.images.length < 5) {
       console.error(`DesktopCarouselGalleryComponent: 'images' requires a length of at least '5'. Current length: '${this.images.length}'`)
       return
@@ -135,7 +137,7 @@ export class CarouselGalleryComponent implements OnInit {
 
     this.timeout = setTimeout(() => {
       this.auto = this.refreshSubscription()
-    }, 5000)
+    }, 5000) as unknown as number
   }
 
   onMouseEnter(e: MouseEvent) {
@@ -146,7 +148,7 @@ export class CarouselGalleryComponent implements OnInit {
 
       this.timeout = setTimeout(() => {
         this.auto = this.refreshSubscription()
-      }, 20000)
+      }, 20000) as unknown as number
     }
   }
 
