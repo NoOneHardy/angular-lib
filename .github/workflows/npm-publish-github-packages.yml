@@ -25,12 +25,15 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build-common
-      - name: Publish package
+      - name: Login to npm registry
         run: |
           echo "@no1hardy:registry=http://no1hardy.ch:4873/" >> .npmrc
-          echo "//no1hardy.ch:4873/:_auth=$(printf '%s:%s' "$NPM_REGISTRY_USERNAME" "$NPM_REGISTRY_PASSWORD" | base64 -w0)" >> .npmrc
-          cd ./dist/common
-          pnpm publish --no-git-checks
+          npx --yes npm-cli-login -u "$NPM_REGISTRY_USERNAME" -p "$NPM_REGISTRY_PASSWORD" -e "$NPM_REGISTRY_USERNAME@no1hardy.ch" -r http://no1hardy.ch:4873
         env:
           NPM_REGISTRY_USERNAME: ${{ secrets.NPM_REGISTRY_USERNAME }}
           NPM_REGISTRY_PASSWORD: ${{ secrets.NPM_REGISTRY_PASSWORD }}
+
+      - name: Publish package
+        run: |
+          cd ./dist/common
+          pnpm publish --no-git-checks
