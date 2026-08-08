@@ -1,11 +1,10 @@
-import {Component} from '@angular/core';
-import {RouterLink, RouterOutlet} from '@angular/router';
-import {CarouselGalleryComponent} from '../../../common/src/public-api'
+import {Component} from '@angular/core'
+import {RouterLink, RouterOutlet} from '@angular/router'
 
 @Component({
-  selector: 'app-root',
+  selector: 'n1h-root',
   standalone: true,
-  imports: [RouterOutlet, CarouselGalleryComponent, RouterLink],
+  imports: [RouterOutlet, RouterLink],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })

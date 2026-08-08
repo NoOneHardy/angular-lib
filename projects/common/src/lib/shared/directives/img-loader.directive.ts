@@ -3,7 +3,7 @@ import {ImageLoaderService} from '../services/image-loader.service'
 
 @Directive({
   standalone: true,
-  selector: '[img]'
+  selector: '[n1hLoadedImg]'
 })
 export class ImgLoaderDirective implements AfterViewInit, OnDestroy {
   private el = inject(ElementRef)

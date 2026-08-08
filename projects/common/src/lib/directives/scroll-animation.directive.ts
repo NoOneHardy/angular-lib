@@ -1,8 +1,8 @@
-import {AfterViewInit, Directive, ElementRef, inject, Input} from '@angular/core';
+import {AfterViewInit, Directive, ElementRef, inject, Input} from '@angular/core'
 import {animate, AnimationBuilder, AnimationMetadata, style} from '@angular/animations'
 
 @Directive({
-  selector: '[n1h-fade-scroll]',
+  selector: '[n1hFadeScroll]',
   standalone: true
 })
 export class ScrollAnimationDirective implements AfterViewInit {

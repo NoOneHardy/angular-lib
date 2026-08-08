@@ -1,7 +1,7 @@
 import {Component, EventEmitter, inject, Input, OnInit, Output} from '@angular/core'
 import {interval, Subscription} from 'rxjs'
 import {Image} from './shared/image'
-import {NgForOf, NgIf, NgOptimizedImage} from '@angular/common'
+import { NgOptimizedImage } from '@angular/common'
 import {ImageComponent} from './image/image.component'
 import {ImageLoaderService} from '../shared/services/image-loader.service'
 import {SwipeService} from '../services/swipe.service'
@@ -11,9 +11,7 @@ import {SwipeService} from '../services/swipe.service'
   standalone: true,
   imports: [
     NgOptimizedImage,
-    ImageComponent,
-    NgForOf,
-    NgIf
+    ImageComponent
   ],
   templateUrl: './carousel-gallery.component.html',
   styleUrl: './carousel-gallery.component.css'

@@ -1,5 +1,7 @@
 <ul>
-  <li *ngFor="let i of items" n1h-fade-scroll direction="horizontal">
-    <h2>Item {{i}}</h2>
-  </li>
+  @for (i of items; track i) {
+    <li n1hFadeScroll direction="horizontal">
+      <h2>Item {{i}}</h2>
+    </li>
+  }
 </ul>
