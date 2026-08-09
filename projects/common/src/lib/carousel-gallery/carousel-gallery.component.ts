@@ -17,7 +17,7 @@ import {SwipeService} from '../services/swipe.service'
 })
 export class CarouselGalleryComponent implements OnInit {
   @Input() images: Image[] = []
-  @Input() interval: number = 5000
+  @Input() interval = 5000
   @Output() loaded = new EventEmitter<void>()
 
   private auto?: Subscription

@@ -23,22 +23,26 @@ export class SwipeService {
         this.swipeTime = time
         return
       case 'end':
-        if (!this.swipeCoord || !this.swipeTime) {
-          this._swipeDir$.next(0)
-          return
-        }
-
-        const direction = [coord[0] - this.swipeCoord[0], coord[1] - this.swipeCoord[1]]
-        const duration = time - this.swipeTime
-
-        if (
-          duration < 1000 && Math.abs(direction[0]) > 30
-          && Math.abs(direction[0]) > Math.abs(direction[1] * 2)
-        ) {
-          if (direction[0] < 0) this._swipeDir$.next(-1)
-          else if (direction[0] > 0) this._swipeDir$.next(1)
-        }
-        this._swipeDir$.next(0)
+        this.endSwipe(coord, time)
     }
+  }
+
+  private endSwipe(coord: [number, number], time: number): void {
+    if (!this.swipeCoord || !this.swipeTime) {
+      this._swipeDir$.next(0)
+      return
+    }
+
+    const direction = [coord[0] - this.swipeCoord[0], coord[1] - this.swipeCoord[1]]
+    const duration = time - this.swipeTime
+
+    if (
+      duration < 1000 && Math.abs(direction[0]) > 30
+      && Math.abs(direction[0]) > Math.abs(direction[1] * 2)
+    ) {
+      if (direction[0] < 0) this._swipeDir$.next(-1)
+      else if (direction[0] > 0) this._swipeDir$.next(1)
+    }
+    this._swipeDir$.next(0)
   }
 }
