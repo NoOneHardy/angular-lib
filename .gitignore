@@ -2,3 +2,7 @@ dist
 node_modules
 .idea
 .angular
+
+*storybook.log
+storybook-static
+documentation.json
