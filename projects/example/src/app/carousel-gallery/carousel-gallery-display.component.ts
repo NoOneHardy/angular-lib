@@ -3,13 +3,12 @@ import {CarouselGalleryComponent, Image} from '../../../../common/src/public-api
 
 
 @Component({
-  selector: 'n1h-carousel-gallery-display',
-  standalone: true,
-  imports: [
-    CarouselGalleryComponent
-  ],
-  templateUrl: './carousel-gallery-display.component.html',
-  styleUrl: './carousel-gallery-display.component.css'
+    selector: 'n1h-carousel-gallery-display',
+    imports: [
+        CarouselGalleryComponent
+    ],
+    templateUrl: './carousel-gallery-display.component.html',
+    styleUrl: './carousel-gallery-display.component.css'
 })
 export class CarouselGalleryDisplayComponent {
   loading = true
