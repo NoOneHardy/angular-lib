@@ -99,9 +99,6 @@ importers:
       '@storybook/angular-vite':
         specifier: 10.5.7
         version: 10.5.7(9fc4fe69624b681033f6397a54a3f27a)
-      '@types/jasmine':
-        specifier: 6.0.0
-        version: 6.0.0
       '@typescript-eslint/eslint-plugin':
         specifier: 8.66.0
         version: 8.66.0(@typescript-eslint/parser@8.66.0(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3))(eslint@10.8.1(jiti@2.7.0)(supports-color@8.1.1))(supports-color@8.1.1)(typescript@6.0.3)
@@ -3048,9 +3045,6 @@ packages:
 
   '@types/http-proxy@1.17.17':
     resolution: {integrity: sha512-ED6LB+Z1AVylNTu7hdzuBqOgMnvG/ld6wGCG8wFnAzKX5uyW2K3WD52v0gnLCTK/VLpXtKckgWuyScYK6cSPaw==}
-
-  '@types/jasmine@6.0.0':
-    resolution: {integrity: sha512-18lgGsLmEh3VJk9eZ5wAjTISxdqzl6YOwu8UdMpolajN57QOCNbl+AbHUd+Yu9ItrsFdB+c8LSZSGNg8nHaguw==}
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -9603,8 +9597,6 @@ snapshots:
   '@types/http-proxy@1.17.17':
     dependencies:
       '@types/node': 26.2.0
-
-  '@types/jasmine@6.0.0': {}
 
   '@types/json-schema@7.0.15': {}
 
