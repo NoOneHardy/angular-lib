@@ -38,6 +38,7 @@ jobs:
           cache-to: type=gha,scope=frontend,mode=max
   pages:
     name: 'Build and Deploy (GitHub Pages)'
+    if: github.ref == 'refs/heads/release'
     runs-on: ubuntu-latest
     permissions:
         contents: read
