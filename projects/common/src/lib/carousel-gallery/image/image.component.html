@@ -1,14 +1,24 @@
-<div class="image" *ngIf="image" [routerLink]="image.link">
-  <img *ngIf="!invisible" [ngSrc]="image.src" height="1" width="1" alt img>
-  <img *ngIf="invisible" [ngSrc]="image.src" height="1" width="1" alt>
-  <div class="content">
-    <h1>{{ image.name }}</h1>
-    <span *ngIf="date">{{ date | date:'dd.MM.yyyy' }}</span>
-    <span *ngIf="!date">{{ image.desc }}</span>
-    <span class="link">
-      Weiter Bilder
-      <span class="material-icons">arrow_forward</span>
-      <span class="hover"></span>
-    </span>
+@if (image) {
+  <div class="image" [routerLink]="image.link">
+    @if (!invisible) {
+      <img [ngSrc]="image.src" height="1" width="1" alt n1hLoadedImg>
+    }
+    @if (invisible) {
+      <img [ngSrc]="image.src" height="1" width="1" alt>
+    }
+    <div class="content">
+      <h1>{{ image.name }}</h1>
+      @if (date) {
+        <span>{{ date | date:'dd.MM.yyyy' }}</span>
+      }
+      @if (!date) {
+        <span>{{ image.desc }}</span>
+      }
+      <span class="link">
+        Weiter Bilder
+        <span class="material-icons">arrow_forward</span>
+        <span class="hover"></span>
+      </span>
+    </div>
   </div>
-</div>
+}

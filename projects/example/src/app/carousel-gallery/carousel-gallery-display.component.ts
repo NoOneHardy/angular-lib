@@ -1,13 +1,12 @@
-import { Component } from '@angular/core';
+import { Component } from '@angular/core'
 import {CarouselGalleryComponent, Image} from '../../../../common/src/public-api'
-import {NgIf} from '@angular/common'
+
 
 @Component({
-  selector: 'ex-carousel-gallery',
+  selector: 'n1h-carousel-gallery-display',
   standalone: true,
   imports: [
-    CarouselGalleryComponent,
-    NgIf
+    CarouselGalleryComponent
   ],
   templateUrl: './carousel-gallery-display.component.html',
   styleUrl: './carousel-gallery-display.component.css'
@@ -64,7 +63,7 @@ export class CarouselGalleryDisplayComponent {
       desc: '2007-06-21T00:00:00',
       link: '/'
     }
-  ];
+  ]
 
   onLoad() {
     this.loading = false

@@ -1,2 +1,4 @@
 <n1h-desktop-carousel-gallery [images]="images" (loaded)="onLoad()" />
-<div *ngIf="loading" class="cover"></div>
+@if (loading) {
+  <div class="cover"></div>
+}

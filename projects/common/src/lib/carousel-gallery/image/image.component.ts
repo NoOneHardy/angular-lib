@@ -1,6 +1,6 @@
-import {AfterViewInit, Component, Input, OnInit} from '@angular/core';
+import {Component, Input, OnInit} from '@angular/core'
 import {Image} from '../shared/image'
-import {DatePipe, NgIf, NgOptimizedImage} from '@angular/common'
+import {DatePipe, NgOptimizedImage} from '@angular/common'
 import {ImgLoaderDirective} from '../../shared/directives/img-loader.directive'
 import {RouterLink} from '@angular/router'
 
@@ -8,7 +8,6 @@ import {RouterLink} from '@angular/router'
   selector: 'n1h-image',
   standalone: true,
   imports: [
-    NgIf,
     NgOptimizedImage,
     ImgLoaderDirective,
     RouterLink,
