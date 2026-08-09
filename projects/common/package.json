@@ -1,6 +1,8 @@
 {
   "name": "@no1hardy/angular-common",
   "version": "21.0.0",
+  "description": "Reusable Angular components, directives, services, and TypeScript utilities for common functionalities.",
+  "author": "NoOneHardy",
   "repository": {
     "type": "git",
     "url": "https://github.com/noonehardy/angular-lib.git"
