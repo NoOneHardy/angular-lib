@@ -2,12 +2,12 @@ import {Component} from '@angular/core'
 import {ScrollAnimationDirective} from '../../../../common/src/public-api'
 
 @Component({
-    selector: 'n1h-scroll',
-    imports: [
-        ScrollAnimationDirective
-    ],
-    templateUrl: './scroll.component.html',
-    styleUrl: './scroll.component.css'
+  selector: 'n1h-scroll',
+  imports: [
+    ScrollAnimationDirective
+  ],
+  templateUrl: './scroll.component.html',
+  styleUrl: './scroll.component.css'
 })
 export class ScrollComponent {
   items: number[] = [...Array(100).keys()]

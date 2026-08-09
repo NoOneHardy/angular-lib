@@ -7,13 +7,13 @@ import {ImageLoaderService} from '../shared/services/image-loader.service'
 import {SwipeService} from '../services/swipe.service'
 
 @Component({
-    selector: 'n1h-desktop-carousel-gallery',
-    imports: [
-        NgOptimizedImage,
-        ImageComponent
-    ],
-    templateUrl: './carousel-gallery.component.html',
-    styleUrl: './carousel-gallery.component.css'
+  selector: 'n1h-desktop-carousel-gallery',
+  imports: [
+    NgOptimizedImage,
+    ImageComponent
+  ],
+  templateUrl: './carousel-gallery.component.html',
+  styleUrl: './carousel-gallery.component.css'
 })
 export class CarouselGalleryComponent implements OnInit {
   @Input() images: Image[] = []

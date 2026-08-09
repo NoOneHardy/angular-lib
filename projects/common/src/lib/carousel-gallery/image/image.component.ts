@@ -5,15 +5,15 @@ import {ImgLoaderDirective} from '../../shared/directives/img-loader.directive'
 import {RouterLink} from '@angular/router'
 
 @Component({
-    selector: 'n1h-image',
-    imports: [
-        NgOptimizedImage,
-        ImgLoaderDirective,
-        RouterLink,
-        DatePipe
-    ],
-    templateUrl: './image.component.html',
-    styleUrl: './image.component.css'
+  selector: 'n1h-image',
+  imports: [
+    NgOptimizedImage,
+    ImgLoaderDirective,
+    RouterLink,
+    DatePipe
+  ],
+  templateUrl: './image.component.html',
+  styleUrl: './image.component.css'
 })
 export class ImageComponent implements OnInit {
   @Input() image?: Image
