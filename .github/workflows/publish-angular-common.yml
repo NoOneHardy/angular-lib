@@ -22,7 +22,7 @@ jobs:
       - name: 'Install dependencies'
         run: pnpm install --frozen-lockfile
       - name: 'Build common library'
-        run: pnpm run build-common
+        run: pnpm run build:common
       - name: 'Create .npmrc'
         run: mv ./workflow.npmrc ~/.npmrc
       - name: 'Publish package'
