@@ -58,12 +58,11 @@ jobs:
       - name: 'Build'
         run: pnpm run build:common
       - name: 'Prepare Publish'
-        if: github.ref == 'refs/heads/release'
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: mv ./workflow.npmrc ~/.npmrc
       - name: 'Publish package'
         if: github.ref == 'refs/heads/release'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
           cd ./dist/common
           pnpm publish --no-git-checks
