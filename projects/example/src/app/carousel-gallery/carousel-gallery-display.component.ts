@@ -4,7 +4,6 @@ import {CarouselGalleryComponent, Image} from '../../../../common/src/public-api
 
 @Component({
   selector: 'n1h-carousel-gallery-display',
-  standalone: true,
   imports: [
     CarouselGalleryComponent
   ],

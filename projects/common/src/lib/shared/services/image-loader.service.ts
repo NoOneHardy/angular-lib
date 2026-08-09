@@ -6,7 +6,7 @@ import {Subject} from 'rxjs'
 })
 export class ImageLoaderService {
   private _imagesLoading = new Subject<number>()
-  private images: Map<HTMLElement, boolean> = new Map()
+  private images: Map<HTMLElement, boolean> = new Map<HTMLElement, boolean>()
   private imagesLoading = 0
 
   imagesLoading$ = this._imagesLoading.asObservable()

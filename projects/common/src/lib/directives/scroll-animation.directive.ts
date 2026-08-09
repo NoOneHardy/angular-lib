@@ -6,8 +6,8 @@ import {animate, AnimationBuilder, AnimationMetadata, style} from '@angular/anim
   standalone: true
 })
 export class ScrollAnimationDirective implements AfterViewInit {
-  @Input() delay: number = 0
-  @Input() duration: number = 500
+  @Input() delay = 0
+  @Input() duration = 500
   @Input() direction: Direction = 'horizontal'
 
   private el: ElementRef<HTMLElement> = inject(ElementRef)

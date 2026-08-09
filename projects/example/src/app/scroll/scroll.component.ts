@@ -3,7 +3,6 @@ import {ScrollAnimationDirective} from '../../../../common/src/public-api'
 
 @Component({
   selector: 'n1h-scroll',
-  standalone: true,
   imports: [
     ScrollAnimationDirective
   ],

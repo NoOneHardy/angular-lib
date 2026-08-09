@@ -6,7 +6,6 @@ import {RouterLink} from '@angular/router'
 
 @Component({
   selector: 'n1h-image',
-  standalone: true,
   imports: [
     NgOptimizedImage,
     ImgLoaderDirective,
@@ -19,7 +18,7 @@ import {RouterLink} from '@angular/router'
 export class ImageComponent implements OnInit {
   @Input() image?: Image
   @Input() date?: Date
-  @Input() invisible: boolean = false
+  @Input() invisible = false
 
   ngOnInit() {
     if (this.image && (new Date(this.image.desc)).toString() != 'Invalid Date') this.date = new Date(this.image.desc)
