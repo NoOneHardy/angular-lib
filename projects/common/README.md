@@ -1,24 +1,28 @@
-# Common
+# @no1hardy/angular-common
 
-This library was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.3.0.
+Reusable Angular components, directives, services, and TypeScript utilities.
 
-## Code scaffolding
+[![npm version](https://img.shields.io/npm/v/@no1hardy/angular-common?registry_uri=https://npm.no1hardy.ch)](https://npm.no1hardy.ch/-/web/detail/@no1hardy/angular-common)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://github.com/NoOneHardy/angular-lib/blob/develop/LICENSE)
 
-Run `ng generate component component-name --project common` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module --project common`.
-> Note: Don't forget to add `--project common` or else it will be added to the default project in your `angular.json` file. 
+## Storybook
 
-## Build
+Browse every component, its inputs/outputs, and live usage examples:
 
-Run `ng build common` to build the project. The build artifacts will be stored in the `dist/` directory.
+**https://noonehardy.github.io/angular-lib/**
 
-## Publishing
+## Installation
 
-After building your library with `ng build common`, go to the dist folder `cd dist/common` and run `npm publish`.
+```shell
+echo "@no1hardy:registry=https://npm.no1hardy.ch" >> .npmrc
+pnpm add @no1hardy/angular-common
+```
 
-## Running unit tests
+## Source & contributing
 
-Run `ng test common` to execute the unit tests via [Karma](https://karma-runner.github.io).
+Source, issues, and contribution guidelines live in the main repo:
+https://github.com/NoOneHardy/angular-lib
 
-## Further help
+## License
 
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Licensed under the [GNU General Public License v3.0](https://github.com/NoOneHardy/angular-lib/blob/develop/LICENSE).

@@ -1,41 +1,52 @@
-# AngularLib
+# @no1hardy/angular-common
 
-This project was generated with [Angular CLI](https://github.com/angular/angular-cli) version 17.2.1.
+Reusable Angular components, directives, and services — published as `@no1hardy/angular-common` and showcased in a live Storybook.
 
-## npm configuration
+[![Build](https://github.com/NoOneHardy/angular-lib/actions/workflows/no1hardy-angular-common.yml/badge.svg)](https://github.com/NoOneHardy/angular-lib/actions/workflows/no1hardy-angular-common.yml)
+[![Storybook](https://github.com/NoOneHardy/angular-lib/actions/workflows/storybook-common.yml/badge.svg)](https://noonehardy.github.io/angular-lib/)
+[![npm version](https://img.shields.io/npm/v/@no1hardy/angular-common?registry_uri=https://npm.no1hardy.ch)](https://npm.no1hardy.ch/-/web/detail/@no1hardy/angular-common)
+[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](LICENSE)
 
-Add GitHub registry
+## Storybook
+
+Browse every component, its inputs/outputs, and live usage examples in the deployed Storybook:
+
+**https://noonehardy.github.io/angular-lib/**
+
+That's the source of truth for what's available in the library and how to use it.
+
+## Installation
 
 ```shell
-npm config set @noonehardy:registry=https://npm.pkg.github.com
+echo "@no1hardy:registry=https://npm.no1hardy.ch" >> .npmrc
+pnpm add @no1hardy/angular-common
 ```
 
-Add credentials for GitHub registry
+## Development
+
+This repo is a pnpm workspace containing the `common` library under `projects/common`.
 
 ```shell
-npm config set //npm.pkg.github.com/:_authToken={{ GitHub token }}
+pnpm install
+pnpm run storybook       # local Storybook dev server
+pnpm run test            # unit tests (Vitest)
+pnpm run lint            # ESLint
+pnpm run build:common    # build the library with ng-packagr
 ```
 
-## Development server
+## Contributing
 
-Run `ng serve` for a dev server. Navigate to `http://localhost:4200/`. The application will automatically reload if you change any of the source files.
+1. Branch off `develop`, make your changes, and ensure `pnpm run test` and `pnpm run lint` pass.
+2. Commit messages follow a gitmoji convention: a gitmoji, a concise single line subject, and the issue number in parentheses — no description.
+   ```
+   ✨ add verification workflows (#35)
+   🔧 fix path to dockerfile (#36)
+   📦 upgrade to angular 21
+   ```
+3. Open a pull request against `develop`. CI (test, lint, build) must pass before merge.
 
-## Code scaffolding
+On merge to `release`, the library is published to npm and Storybook is deployed to GitHub Pages and Docker (`docker.no1hardy.ch`).
 
-Run `ng generate component component-name` to generate a new component. You can also use `ng generate directive|pipe|service|class|guard|interface|enum|module`.
+## License
 
-## Build
-
-Run `ng build` to build the project. The build artifacts will be stored in the `dist/` directory.
-
-## Running unit tests
-
-Run `ng test` to execute the unit tests via [Karma](https://karma-runner.github.io).
-
-## Running end-to-end tests
-
-Run `ng e2e` to execute the end-to-end tests via a platform of your choice. To use this command, you need to first add a package that implements end-to-end testing capabilities.
-
-## Further help
-
-To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI Overview and Command Reference](https://angular.io/cli) page.
+Licensed under the [GNU General Public License v3.0](LICENSE).
