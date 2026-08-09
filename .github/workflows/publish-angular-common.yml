@@ -1,0 +1,31 @@
+name: 'Publish @no1hardy/angular-common'
+on:
+  push:
+    branches:
+      - release
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Setup pnpm'
+        uses: pnpm/setup@v1
+        with:
+          version: 11
+          runtime: node@24
+          cache: true
+      - name: 'Install dependencies'
+        run: pnpm install --frozen-lockfile
+      - name: 'Build common library'
+        run: pnpm run build-common
+      - name: 'Create .npmrc'
+        run: mv ./workflow.npmrc ~/.npmrc
+      - name: 'Publish package'
+        run: |
+          cd ./dist/common
+          pnpm publish --no-git-checks
