@@ -17,6 +17,7 @@ jobs:
           version: 11
           runtime: node@24
           cache: true
+          install: false
       - name: 'Install dependencies'
         run: pnpm install --frozen-lockfile
       - name: 'Test project'
@@ -34,6 +35,7 @@ jobs:
           version: 11
           runtime: node@24
           cache: true
+          install: false
       - name: 'Install dependencies'
         run: pnpm install --frozen-lockfile
       - name: 'Lint project'
@@ -52,6 +54,7 @@ jobs:
           version: 11
           runtime: node@24
           cache: true
+          install: false
       - name: 'Install dependencies'
         run: pnpm install --frozen-lockfile
       - name: 'Build common library'
