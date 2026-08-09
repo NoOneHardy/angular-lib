@@ -31,13 +31,9 @@ const meta: Meta<ImageComponent> = {
     image: {
       description: 'The image to display, including its name, source, link and description.'
     },
-    date: {
-      control: 'date',
-      description: 'Optional date shown instead of the description. Falls back to a parsed `image.desc` when omitted.'
-    },
     invisible: {
       control: 'boolean',
-      description: 'Hides the underlying `<img>` while keeping the caption and layout in place.'
+      description: 'Excludes the underlying `<img>` from the `ImageLoaderService`.'
     }
   }
 }
@@ -49,14 +45,6 @@ type Story = StoryObj<ImageComponent>
 export const Default: Story = {
   args: {
     image: sampleImage,
-    invisible: false
-  }
-}
-
-export const WithDate: Story = {
-  args: {
-    image: sampleImage,
-    date: new Date('2024-07-14'),
     invisible: false
   }
 }

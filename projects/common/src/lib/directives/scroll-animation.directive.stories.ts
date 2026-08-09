@@ -16,7 +16,7 @@ const meta: Meta<ScrollAnimationDirective> = {
     template: `
       <div style="height: 20em; overflow-y: auto; border: 1px solid rgba(128,128,128,.4); padding: 0 1em;">
         <p>Scroll down inside this box to trigger the animation.</p>
-        <div style="height: 16em;"></div>
+        <div style="height: 20em;"></div>
         <div
           n1hFadeScroll
           [delay]="delay"
