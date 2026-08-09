@@ -1,0 +1,16 @@
+.angular
+.claude
+.github
+.idea
+.run
+dist
+node_modules
+storybook-static
+.dockerignore
+.editorconfig
+.gitignore
+.mcp.json
+eslint.config.js
+README.md
+vitest.shims.d.ts
+workflow.npmrc
