@@ -1,0 +1,69 @@
+name: '@no1hardy/angular-common'
+on:
+  push:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Setup pnpm'
+        uses: pnpm/setup@v1
+        with:
+          version: 11
+          runtime: node@24
+          cache: true
+          install: false
+      - name: 'Install dependencies'
+        run: pnpm install --frozen-lockfile
+      - name: 'Testing'
+        run: pnpm run test:ci
+  lint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Setup pnpm'
+        uses: pnpm/setup@v1
+        with:
+          version: 11
+          runtime: node@24
+          cache: true
+          install: false
+      - name: 'Install dependencies'
+        run: pnpm install --frozen-lockfile
+      - name: 'Linting'
+        run: pnpm run lint
+  build:
+    needs: [ test, lint ]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: 'Checkout'
+        uses: actions/checkout@v4
+      - name: 'Setup pnpm'
+        uses: pnpm/setup@v1
+        with:
+          version: 11
+          runtime: node@24
+          cache: true
+          install: false
+      - name: 'Install dependencies'
+        run: pnpm install --frozen-lockfile
+      - name: 'Build'
+        run: pnpm run build:common
+      - name: 'Prepare Publish'
+        if: github.ref == 'refs/heads/release'
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: mv ./workflow.npmrc ~/.npmrc
+      - name: 'Publish package'
+        if: github.ref == 'refs/heads/release'
+        run: |
+          cd ./dist/common
+          pnpm publish --no-git-checks

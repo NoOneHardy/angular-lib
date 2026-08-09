@@ -1,4 +1,8 @@
 dist
 node_modules
 .idea
-package-lock.json
+.angular
+
+*storybook.log
+storybook-static
+documentation.json
