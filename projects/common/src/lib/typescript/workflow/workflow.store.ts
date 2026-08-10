@@ -3,7 +3,7 @@ import {computed, inject, InjectionToken} from '@angular/core'
 import {TRANSITION_CONFIG, TransitionConfig} from './model/transition-config'
 import {Transition} from './model/transition'
 
-export function workflowStoreFactory<T extends object, U extends string | number = string>(initialStep: U) {
+export function workflowStoreFactory<T extends object, U extends string | number = string>(initialStep: U, initialData: Partial<T> = {}) {
   interface WorkflowState {
     data: Partial<T>
     currentStep: U
@@ -14,7 +14,7 @@ export function workflowStoreFactory<T extends object, U extends string | number
   }
 
   const initialState: WorkflowState = {
-    data: {},
+    data: initialData,
     currentStep: initialStep,
     direction: 'forward',
     path: [],
@@ -25,7 +25,7 @@ export function workflowStoreFactory<T extends object, U extends string | number
   return signalStore(
     withState(initialState),
     withComputed((state) => ({
-      hasError: computed(() => !!state.error())
+      hasError: computed(() => state.error() !== null)
     })),
     withMethods((state) => {
       const transitionConfig: TransitionConfig<T, U> = inject(TRANSITION_CONFIG)
@@ -41,6 +41,7 @@ export function workflowStoreFactory<T extends object, U extends string | number
 
           if (transition === null) return this.setError('No transition found')
 
+          // TODO: simplify
           if (transition.target !== undefined) return patchState(state, {
             currentStep: transition.target,
             direction: 'forward',
@@ -48,11 +49,16 @@ export function workflowStoreFactory<T extends object, U extends string | number
             error: null
           })
 
-          patchState(state, {isFinished: true, error: null})
+          patchState(state, {
+            isFinished: true,
+            direction: 'forward',
+            path: [...state.path(), currentStep],
+            error: null
+          })
         },
         back(...keys: (keyof Partial<T>)[]): void {
           const path = state.path()
-          if (path.length === 0) return this.setError('No previous step found')
+          if (path.length === 0) return
           const target = path[path.length - 1]
 
           const resetData = Object.fromEntries(keys.map(key => [key, undefined]))
@@ -84,4 +90,4 @@ export function workflowStoreFactory<T extends object, U extends string | number
 
 export type WorkflowStore<T extends object, U extends | string | number = string> = InstanceType<ReturnType<typeof workflowStoreFactory<T, U>>>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const workflowStore = new InjectionToken<WorkflowStore<any, any>>('The workflow store')
+export const workflowStore = new InjectionToken<WorkflowStore<any, any>>('An instance of the workflow store')
