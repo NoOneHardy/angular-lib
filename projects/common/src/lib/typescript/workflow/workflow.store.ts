@@ -41,16 +41,9 @@ export function workflowStoreFactory<T extends object, U extends string | number
 
           if (transition === null) return this.setError('No transition found')
 
-          // TODO: simplify
-          if (transition.target !== undefined) return patchState(state, {
-            currentStep: transition.target,
-            direction: 'forward',
-            path: [...state.path(), currentStep],
-            error: null
-          })
-
+          const transitionTarget = transition.target !== undefined ? {currentStep: transition.target} : {isFinished: true}
           patchState(state, {
-            isFinished: true,
+            ...transitionTarget,
             direction: 'forward',
             path: [...state.path(), currentStep],
             error: null
