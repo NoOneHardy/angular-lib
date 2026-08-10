@@ -1,10 +1,10 @@
 interface StepTarget<T extends string | number> {
-  step: T
+  target: T
   finish?: never
 }
 interface FinishTarget {
   finish: true
-  step?: never
+  target?: never
 }
 type TransitionTarget<T extends string | number> = StepTarget<T> | FinishTarget
 
