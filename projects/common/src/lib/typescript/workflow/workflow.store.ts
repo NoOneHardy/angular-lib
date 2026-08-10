@@ -1,5 +1,5 @@
 import {patchState, signalStore, withComputed, withMethods, withState} from '@ngrx/signals'
-import {computed, inject} from '@angular/core'
+import {computed, inject, InjectionToken} from '@angular/core'
 import {TRANSITION_CONFIG, TransitionConfig} from './model/transition-config'
 import {Transition} from './model/transition'
 
@@ -81,3 +81,7 @@ export function workflowStoreFactory<T extends object, U extends string | number
     return transitions.find(t => t.default) ?? null
   }
 }
+
+export type WorkflowStore<T extends object, U extends | string | number = string> = InstanceType<ReturnType<typeof workflowStoreFactory<T, U>>>
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const workflowStore = new InjectionToken<WorkflowStore<any, any>>('The workflow store')
