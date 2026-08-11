@@ -5,16 +5,16 @@ import * as WorkflowDemoStories from './workflow-demo.component.stories'
 
 # Workflow
 
-`workflowStoreFactory` builds an [NgRx Signal Store](https://ngrx.io/guide/signals) that drives a
-linear or branching, step-by-step workflow (wizards, onboarding flows, multi-step forms, ...).
-Steps and the rules for moving between them are described declaratively as a `TransitionConfig`;
-the store itself only knows how to walk that config forward and backward.
+The `workflowStoreFactory` builds an [NgRx Signal Store](https://ngrx.io/guide/signals) that can manage
+a linear or branching, step-by-step workflow (wizards, onboarding flows, multi-step forms, ...).
+Steps and the rules for moving between them are provided as InjectionToken as a `TransitionConfig`.
+the store itself only knows how to walk that config forward and backward.<br/>
+This setup allows configuring complex workflows using a single and simple transition-based set of configurations.
 
 ## Try it
 
-The demo below is an onboarding wizard built on top of the store: `account` → `profile` →
-(minors only) `guardianConsent` → `preferences` → finish. Each step validates its own fields
-locally and only calls `next()` once they're valid — try leaving a field empty to see that
+The demo below is an onboarding wizard built on top of the store: `account` → `profile` → (minors only) `guardianConsent` → `preferences` → finish.
+Each step validates its own fields locally and only calls `next()` once they're valid — try leaving a field empty to see that
 handled in the step itself, then enter an age under 18 to see the workflow branch to the
 guardian-consent step instead of skipping straight to preferences.
 

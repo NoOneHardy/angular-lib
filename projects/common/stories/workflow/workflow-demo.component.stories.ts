@@ -2,7 +2,7 @@ import {Meta, StoryObj} from '@storybook/angular-vite'
 import {WorkflowDemoComponent} from './workflow-demo.component'
 
 const meta: Meta<WorkflowDemoComponent> = {
-  title: 'Typescript/Workflow',
+  title: 'NgRx/Workflow',
   component: WorkflowDemoComponent
 }
 
