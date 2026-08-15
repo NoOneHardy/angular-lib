@@ -398,4 +398,39 @@ describe('workflowStoreFactory', () => {
       expect(store.hasError()).toBe(true)
     })
   })
+
+  describe('canGoBack', () => {
+    it('should return false when path is empty', () => {
+      const store = configureStore()
+
+      expect(store.canGoBack()).toBe(false)
+    })
+
+    it('should return true when path contains a step', () => {
+      const store = configureStore()
+
+      store.next()
+      expect(store.canGoBack()).toBe(true)
+    })
+
+    it('should return true when path contains multiple steps', () => {
+      const store = configureStore()
+
+      store.next()
+      store.next()
+      expect(store.canGoBack()).toBe(true)
+      store.back()
+      expect(store.canGoBack()).toBe(true)
+    })
+
+    it('should return false after walking back to the first step', () => {
+      const store = configureStore()
+
+      store.next()
+      store.next()
+      store.back()
+      store.back()
+      expect(store.canGoBack()).toBe(false)
+    })
+  })
 })

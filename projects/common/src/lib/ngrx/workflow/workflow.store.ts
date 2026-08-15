@@ -25,7 +25,8 @@ export function workflowStoreFactory<T extends object, U extends string | number
   return signalStore(
     withState(initialState),
     withComputed((state) => ({
-      hasError: computed(() => state.error() !== null)
+      hasError: computed(() => state.error() !== null),
+      canGoBack: computed(() => state.path().length > 0)
     })),
     withMethods((state) => {
       const transitionConfig: TransitionConfig<T, U> = inject(TRANSITION_CONFIG)
