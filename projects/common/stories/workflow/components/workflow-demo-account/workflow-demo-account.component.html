@@ -1,0 +1,16 @@
+<form [formGroup]="form">
+  <mat-form-field>
+    <mat-label>Email</mat-label>
+    <input matInput
+           formControlName="email"
+           name="email"
+           placeholder="your@email.com">
+
+    @if (form.controls.email.touched && form.controls.email.invalid) {
+      <mat-error class="error">Email is required.</mat-error>
+    }
+  </mat-form-field>
+</form>
+<div class="bottom-nav">
+  <button mat-flat-button (click)="next()">Next</button>
+</div>
