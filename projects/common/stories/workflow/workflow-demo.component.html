@@ -1,0 +1,32 @@
+<div style="max-width: 24em; font-family: sans-serif">
+  @if (store.hasError()) {
+    <p class="error">Workflow error: {{ store.error() }}</p>
+  }
+
+  @if (store.isFinished()) {
+    <p>Workflow finished!</p>
+  } @else {
+    @switch (store.currentStep()) {
+      @case (OnboardingStep.ACCOUNT) {
+        <n1h-workflow-demo-account/>
+      }
+      @case (OnboardingStep.PROFILE) {
+        <n1h-workflow-demo-profile/>
+      }
+      @case (OnboardingStep.GUARDIAN_CONSENT) {
+       <n1h-workflow-demo-guardian/>
+      }
+      @case (OnboardingStep.PREFERENCES) {
+        <n1h-workflow-demo-preferences/>
+        }
+    }
+  }
+</div>
+
+<pre>{{ ({
+  currentStep: store.currentStep(),
+  data: store.data(),
+  direction: store.direction(),
+  path: store.path(),
+  isFinished: store.isFinished()
+}) | json }}</pre>
