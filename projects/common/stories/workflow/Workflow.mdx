@@ -1,0 +1,278 @@
+import {Meta, Canvas, Controls, Source} from '@storybook/addon-docs/blocks'
+import * as WorkflowDemoStories from './workflow-demo.component.stories'
+
+<Meta of={WorkflowDemoStories}/>
+
+# Workflow
+
+The `workflowStoreFactory` builds an [NgRx Signal Store](https://ngrx.io/guide/signals) that can manage
+a linear or branching, step-by-step workflow (wizards, onboarding flows, multi-step forms, ...).
+Steps and the rules for moving between them are provided as InjectionToken as a `TransitionConfig`.
+the store itself only knows how to walk that config forward and backward.<br/>
+This setup allows configuring complex workflows using a single and simple transition-based set of configurations.
+
+## Recommended setup
+
+The demo below follows a container/step split that works well for most workflows:
+
+- **One container component** provides the store (as in [Creating a store](#creating-a-store)) and
+  renders the step whose selector matches `currentStep`, via a `@switch`:
+
+```html
+<!-- onboarding.component.html -->
+@if (store.hasError()) {
+  <p class="error">Workflow error: {{ store.error() }}</p>
+}
+
+@if (store.isFinished()) {
+  <p>Workflow finished!</p>
+} @else {
+  @switch (store.currentStep()) {
+    @case (OnboardingStep.ACCOUNT) {
+      <app-onboarding-account/>
+    }
+    @case (OnboardingStep.PROFILE) {
+      <app-onboarding-profile/>
+    }
+    @case (OnboardingStep.GUARDIAN_CONSENT) {
+      <app-onboarding-guardian/>
+    }
+    @case (OnboardingStep.PREFERENCES) {
+      <app-onboarding-preferences/>
+    }
+  }
+}
+```
+
+  The container never touches step-specific fields — it only reacts to `hasError`, `isFinished` and
+  `currentStep`, so adding or reordering steps means editing this `@switch` and the `TransitionConfig`,
+  nothing else.
+
+- **One component per step** injects the same store token, owns its own form, and only calls `next()`
+  once that form is valid — this is where local validation lives (see the note under
+  [`next()`](#nextdata-partialt)):
+
+```ts
+// onboarding-account.component.ts
+@Component({/* ... */})
+export class OnboardingAccountComponent implements OnInit {
+  private workflow: WorkflowStore<OnboardingData, OnboardingStep> = inject(workflowStore)
+
+  form = new FormGroup({
+    email: new FormControl<string>('', {nonNullable: true, validators: [Validators.required, Validators.email]})
+  })
+
+  next(): void {
+    this.form.markAllAsTouched()
+    if (this.form.invalid) return
+    this.workflow.next({...this.form.value})
+  }
+
+  ngOnInit(): void {
+    this.form.patchValue(this.workflow.data())
+  }
+}
+```
+
+  Re-hydrating the form from `store.data()` in `ngOnInit` (as above) means a step keeps its values if
+  the user navigates away with `next()` and returns to it later.
+
+## Try it
+
+The demo below is an onboarding wizard built on top of the store: `ACCOUNT` → `PROFILE` → (minors only) `GUARDIAN_CONSENT` → `PREFERENCES` → finish.
+Each step validates its own fields locally and only calls `next()` once they're valid — try leaving a field empty to see that
+handled in the step itself, then enter an age under 18 to see the workflow branch to the
+`GUARDIAN_CONSENT` step instead of skipping straight to `PREFERENCES`.
+
+<Canvas of={WorkflowDemoStories.Interactive}/>
+<Controls of={WorkflowDemoStories.Interactive}/>
+
+## Creating a store
+
+```ts
+import {Component} from '@angular/core'
+import {workflowStoreFactory, workflowStore, TransitionConfig, TRANSITION_CONFIG} from '@no1hardy/angular-common'
+
+interface OnboardingData {
+  email: string
+  age: number
+}
+
+enum OnboardingStep {
+  ACCOUNT = 'ACCOUNT',
+  PROFILE = 'PROFILE',
+  GUARDIAN_CONSENT = 'GUARDIAN_CONSENT',
+  PREFERENCES = 'PREFERENCES'
+}
+
+const transitions: TransitionConfig<OnboardingData, OnboardingStep> = {
+  [OnboardingStep.ACCOUNT]: [
+    {target: OnboardingStep.PROFILE, default: true}
+  ],
+  [OnboardingStep.PROFILE]: [
+    // branch: adults skip straight to preferences, minors go through an extra step
+    {target: OnboardingStep.PREFERENCES, canActivate: data => (data.age ?? 0) >= 18},
+    {target: OnboardingStep.GUARDIAN_CONSENT, default: true}
+  ],
+  [OnboardingStep.GUARDIAN_CONSENT]: [
+    {target: OnboardingStep.PREFERENCES, default: true}
+  ],
+  [OnboardingStep.PREFERENCES]: [
+    {finish: true, default: true}
+  ]
+}
+
+@Component({
+  providers: [
+    {provide: workflowStore, useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(OnboardingStep.ACCOUNT)},
+    {provide: TRANSITION_CONFIG, useValue: transitions}
+  ]
+}
+export class OnboardingComponent {
+}
+```
+
+`workflowStoreFactory<T, U>(initialStep)` is generic over:
+- `T` — the shape of the data collected across the whole workflow (each step usually contributes a partial slice of it).
+- `U` — the type used for step identifiers, either `string` (the default) or `number`. It is recommended to declare the
+steps as enum and pass the enum type as `U` to get type safety and autocompletion.
+
+The returned class is a regular injectable signal store — provide it using the `workflowStore` injection token in the
+`providers` array of a module or component with `useClass` (and a `TRANSITION_CONFIG` value describing your steps):
+
+```ts
+providers: [
+    {provide: workflowStore, useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(OnboardingStep.ACCOUNT)},
+    {provide: TRANSITION_CONFIG, useValue: transitions}
+]
+```
+
+## State
+
+<table>
+  <thead>
+  <tr>
+    <th>Signal</th>
+    <th>Type</th>
+    <th>Description</th>
+  </tr>
+  </thead>
+  <tbody>
+  <tr>
+    <td><code>data</code></td>
+    <td><code>Partial&lt;T&gt;</code></td>
+    <td>Data collected so far, merged in on every <code>next()</code> call.</td>
+  </tr>
+  <tr>
+    <td><code>currentStep</code></td>
+    <td><code>U</code></td>
+    <td>The step the workflow is currently on.</td>
+  </tr>
+  <tr>
+    <td><code>direction</code></td>
+    <td><code>'forward' | 'backward'</code></td>
+    <td>Which way the last transition moved.</td>
+  </tr>
+  <tr>
+    <td><code>path</code></td>
+    <td><code>U[]</code></td>
+    <td>Steps visited on the way to <code>currentStep</code>, most recent last — the back stack <code>back()</code> pops
+      from.</td>
+  </tr>
+  <tr>
+    <td><code>error</code></td>
+    <td><code>string | null</code></td>
+    <td>The last <em>workflow</em>-level error (no matching transition, no previous step, ...),
+      or <code>null</code> once cleared by a successful transition. Not a place to surface field validation — see the
+      note under <a href="#nextdata-partialt">next()</a>.</td>
+  </tr>
+  <tr>
+    <td><code>isFinished</code></td>
+    <td><code>boolean</code></td>
+    <td><code>true</code> once a transition with <code>finish: true</code> has matched.</td>
+  </tr>
+  <tr>
+    <td><code>hasError</code></td>
+    <td><code>boolean</code> <em>(computed)</em></td>
+    <td>Shorthand for <code>!!error()</code>.</td>
+  </tr>
+  <tr>
+    <td><code>canGoBack</code></td>
+    <td><code>boolean</code> <em>(computed)</em></td>
+    <td><code>true</code> while <code>path</code> has at least one step to pop — use it to conditionally show
+      a "back" control before calling <code>back()</code>.</td>
+  </tr>
+  </tbody>
+</table>
+
+## Methods
+
+### `next(data?: Partial<T>)`
+
+Merges `data` into the store's `data`, then evaluates the transitions configured for
+`currentStep` (see [Transitions](#transitions) below) against the *merged* data:
+
+- If a transition matches and has a `target`, the store moves to it, pushes the previous
+`currentStep` onto `path`, sets `direction` to `'forward'`, and clears `error`.
+- If a transition matches and has `finish: true`, `isFinished` is set to `true` and `error` is cleared. `currentStep` and `path` are left untouched.
+- If no transition matches, `error` is set to `'No transition found'` and nothing else changes.
+
+`error` and `hasError` exist for *workflow*-level failures — a step was misconfigured, or
+`next()` was called when there was nowhere to go. They are not meant to carry per-field
+validation feedback ("email is required"). Validate a step's own input in the component for that
+step, and simply don't call `next()` until it's valid; reserve `canActivate` on a transition for
+choosing between multiple *valid* paths forward (see [Transitions](#transitions)), not for
+rejecting invalid input. The demo above validates each step locally for exactly this reason.
+
+### `back(...keys: (keyof Partial<T>)[])`
+
+Pops the last step off `path` and moves `currentStep` back to it, setting `direction` to
+`'backward'` and clearing `error`. Any `keys` passed are reset to `undefined` on `data` — use this
+to drop values that belonged only to the step being left, so they don't leak into a different
+branch if the user takes a different path forward next time.
+
+If `path` is empty (no forward transition has happened yet, or `back()` has already unwound the
+whole path), the workflow fails silently so no error is thrown.
+
+### `setError(error: string)`
+
+Sets `error` directly. `next()` and `back()` call this internally; it's exposed for cases where
+validation needs to report a failure that isn't naturally expressed as "no transition matched"
+(e.g. an async check performed before calling `next()`).
+
+## Transitions
+
+Each step in a `TransitionConfig<T, U>` maps to an ordered array of `Transition<T, U>` — `next()`
+picks the **first** one that applies:
+
+1. The first transition in the array whose `canActivate(data)` returns `true`.
+2. Otherwise, the first transition in the array marked `default: true`.
+3. Otherwise, no transition matches and `next()` errors.
+
+Put more specific, guarded transitions before the fallback default — order matters. A transition
+also has to say where it goes:
+
+```ts
+{step: 'profile', canActivate: data => !!data.email}   // guarded, moves to a step
+{step: 'preferences', default: true}                    // unconditional, moves to a step
+{finish: true, canActivate: data => data.accepted}       // guarded, ends the workflow
+{finish: true, default: true}                            // unconditional, ends the workflow
+```
+
+A transition is one of `{step, canActivate}`, `{step, default}`, `{finish: true, canActivate}`
+or `{finish: true, default}` — `step` and `finish` are mutually exclusive, as are `canActivate`
+and `default`.
+
+## Steps that are `0` or `''`
+
+`U` is typed as `string | number`, and both an empty string and the number `0` are valid step
+identifiers — the store checks `currentStep` for `undefined`/`null` rather than falsiness, so a
+numeric workflow that starts at step `0` behaves the same as one starting at step `1`.
+
+## Missing config entries
+
+If `TransitionConfig` has no entry at all for `currentStep` (a step referenced by a transition but
+never defined, or a typo), `next()` treats that the same as an empty transition list: `error` is
+set to `'No transition found'` rather than throwing.
+
+<Source of={WorkflowDemoStories.Interactive}/>

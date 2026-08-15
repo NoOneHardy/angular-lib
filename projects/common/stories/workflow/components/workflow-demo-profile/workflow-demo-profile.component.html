@@ -1,0 +1,19 @@
+<form [formGroup]="form" (ngSubmit)="next()">
+  <mat-form-field>
+    <mat-label>Age</mat-label>
+    <input matInput
+           formControlName="age"
+           name="age"
+           type="number"
+           placeholder="Age">
+    @if (form.controls.age.touched && form.controls.age.invalid) {
+      <mat-error class="error">Age is required.</mat-error>
+    }
+  </mat-form-field>
+  <mat-checkbox formControlName="newsletter">Subscribe to newsletter</mat-checkbox>
+</form>
+
+<div class="bottom-nav">
+  <button mat-button (click)="back()">Back</button>
+  <button mat-flat-button (click)="next()">Next</button>
+</div>

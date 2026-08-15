@@ -1,0 +1,19 @@
+<form [formGroup]="form" (ngSubmit)="next()">
+  <p>A parent or guardian's email is required for members under 18.</p>
+  <mat-form-field>
+    <mat-label>Guardian email</mat-label>
+    <input matInput
+           formControlName="guardianEmail"
+           name="email"
+           type="email"
+           placeholder="Email">
+    @if (form.controls.guardianEmail.touched && form.controls.guardianEmail.invalid) {
+      <mat-error class="error">Email is required.</mat-error>
+    }
+  </mat-form-field>
+</form>
+
+<div class="bottom-nav">
+  <button mat-button (click)="back()">Back</button>
+  <button mat-flat-button (click)="next()">Next</button>
+</div>
