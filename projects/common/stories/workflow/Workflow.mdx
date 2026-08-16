@@ -7,7 +7,7 @@ import * as WorkflowDemoStories from './workflow-demo.component.stories'
 
 The `workflowStoreFactory` builds an [NgRx Signal Store](https://ngrx.io/guide/signals) that can manage
 a linear or branching, step-by-step workflow (wizards, onboarding flows, multi-step forms, ...).
-Steps and the rules for moving between them are provided as InjectionToken as a `TransitionConfig`.
+Steps and the rules for moving between them are provided as factory parameter as a `TransitionConfig`.
 the store itself only knows how to walk that config forward and backward.<br/>
 This setup allows configuring complex workflows using a single and simple transition-based set of configurations.
 
@@ -91,7 +91,7 @@ handled in the step itself, then enter an age under 18 to see the workflow branc
 
 ```ts
 import {Component} from '@angular/core'
-import {workflowStoreFactory, workflowStore, TransitionConfig, TRANSITION_CONFIG} from '@no1hardy/angular-common'
+import {workflowStoreFactory, workflowStore, TransitionConfig} from '@no1hardy/angular-common'
 
 interface OnboardingData {
   email: string
@@ -124,26 +124,27 @@ const transitions: TransitionConfig<OnboardingData, OnboardingStep> = {
 
 @Component({
   providers: [
-    {provide: workflowStore, useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(OnboardingStep.ACCOUNT)},
-    {provide: TRANSITION_CONFIG, useValue: transitions}
+    {
+      provide: workflowStore,
+      useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(transitions, OnboardingStep.ACCOUNT)
+    }
   ]
-}
+})
 export class OnboardingComponent {
 }
 ```
 
-`workflowStoreFactory<T, U>(initialStep)` is generic over:
+`workflowStoreFactory<T, U>(transitions: TransitionConfig<T, U>, initialStep: U, initialData?: T)` is generic over:
 - `T` — the shape of the data collected across the whole workflow (each step usually contributes a partial slice of it).
 - `U` — the type used for step identifiers, either `string` (the default) or `number`. It is recommended to declare the
 steps as enum and pass the enum type as `U` to get type safety and autocompletion.
 
 The returned class is a regular injectable signal store — provide it using the `workflowStore` injection token in the
-`providers` array of a module or component with `useClass` (and a `TRANSITION_CONFIG` value describing your steps):
+`providers` array of a module or component with `useClass`:
 
 ```ts
 providers: [
-    {provide: workflowStore, useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(OnboardingStep.ACCOUNT)},
-    {provide: TRANSITION_CONFIG, useValue: transitions}
+    {provide: workflowStore, useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(transitions, OnboardingStep.ACCOUNT)}
 ]
 ```
 
@@ -253,14 +254,14 @@ Put more specific, guarded transitions before the fallback default — order mat
 also has to say where it goes:
 
 ```ts
-{step: 'profile', canActivate: data => !!data.email}   // guarded, moves to a step
-{step: 'preferences', default: true}                    // unconditional, moves to a step
+{target: 'profile', canActivate: data => !!data.email}   // guarded, moves to a step
+{target: 'preferences', default: true}                    // unconditional, moves to a step
 {finish: true, canActivate: data => data.accepted}       // guarded, ends the workflow
 {finish: true, default: true}                            // unconditional, ends the workflow
 ```
 
-A transition is one of `{step, canActivate}`, `{step, default}`, `{finish: true, canActivate}`
-or `{finish: true, default}` — `step` and `finish` are mutually exclusive, as are `canActivate`
+A transition is one of `{target, canActivate}`, `{target, default}`, `{finish: true, canActivate}`
+or `{finish: true, default}` — `target` and `finish` are mutually exclusive, as are `canActivate`
 and `default`.
 
 ## Steps that are `0` or `''`
