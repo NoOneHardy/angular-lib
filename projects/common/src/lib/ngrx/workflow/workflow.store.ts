@@ -4,14 +4,15 @@ import {TransitionConfig} from './model/transition-config'
 import {Transition} from './model/transition'
 import {WorkflowOptions} from './model/workflow-options'
 
-export function workflowStoreFactory<T extends object, U extends string | number = string>(
-  transitionConfig: TransitionConfig<T, U>,
+export function workflowStoreFactory<T extends object, U extends string | number = string, M extends object = object>(
+  transitionConfig: TransitionConfig<T, U, M>,
   initialStep: U,
   options: Partial<WorkflowOptions<T>> = {}
 ) {
   interface WorkflowState {
     data: Partial<T>
     currentStep: U
+    currentMeta: M | null
     direction: 'forward' | 'backward'
     path: U[]
     error: string | null
@@ -21,6 +22,7 @@ export function workflowStoreFactory<T extends object, U extends string | number
   const initialState: WorkflowState = {
     data: options.initialData ?? {},
     currentStep: initialStep,
+    currentMeta: transitionConfig[initialStep]?.meta ?? null,
     direction: 'forward',
     path: [],
     error: null,
@@ -40,7 +42,10 @@ export function workflowStoreFactory<T extends object, U extends string | number
           if (currentStep === undefined || currentStep === null) return this.setError('No current step found')
           if (data) patchState(state, {data: {...state.data(), ...data}})
 
-          const transitions = transitionConfig[currentStep]
+          const config = transitionConfig[currentStep]
+          if (config === undefined) return this.setError('No transition config found for current step')
+
+          const transitions = config.transitions
           const transition = transitions ? getTransition(state.data(), transitions) : null
 
           if (transition === null) return this.setError('No transition found')
@@ -51,6 +56,9 @@ export function workflowStoreFactory<T extends object, U extends string | number
             direction: 'forward',
             path: [...state.path(), currentStep],
             error: null
+          })
+          patchState(state, {
+            currentMeta: transitionConfig[state.currentStep()]?.meta ?? null
           })
         },
         back(...keys: (keyof Partial<T>)[]): void {
@@ -70,6 +78,9 @@ export function workflowStoreFactory<T extends object, U extends string | number
             path: path.slice(0, -1),
             error: null
           })
+          patchState(state, {
+            currentMeta: transitionConfig[state.currentStep()]?.meta ?? null
+          })
         },
         setError(error: string): void {
           patchState(state, {error})
@@ -85,6 +96,6 @@ export function workflowStoreFactory<T extends object, U extends string | number
   }
 }
 
-export type WorkflowStore<T extends object, U extends | string | number = string> = InstanceType<ReturnType<typeof workflowStoreFactory<T, U>>>
+export type WorkflowStore<T extends object, U extends | string | number = string, M extends object = object> = InstanceType<ReturnType<typeof workflowStoreFactory<T, U, M>>>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const workflowStore = new InjectionToken<WorkflowStore<any, any>>('An instance of the workflow store')
