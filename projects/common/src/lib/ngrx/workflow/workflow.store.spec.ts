@@ -41,7 +41,7 @@ function configureStore(
     providers: [
       {
         provide: workflowStore,
-        useClass: workflowStoreFactory<WizardData, Step>(config as TransitionConfig<WizardData, Step>, initialStep, initialData)
+        useClass: workflowStoreFactory<WizardData, Step>(config as TransitionConfig<WizardData, Step>, initialStep, {initialData})
       }
     ]
   }).inject<WorkflowStore<WizardData, Step>>(workflowStore)
