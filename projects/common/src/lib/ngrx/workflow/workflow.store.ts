@@ -1,9 +1,14 @@
 import {patchState, signalStore, withComputed, withMethods, withState} from '@ngrx/signals'
-import {computed, inject, InjectionToken} from '@angular/core'
-import {TRANSITION_CONFIG, TransitionConfig} from './model/transition-config'
+import {computed, InjectionToken} from '@angular/core'
+import {TransitionConfig} from './model/transition-config'
 import {Transition} from './model/transition'
+import {WorkflowOptions} from './model/workflow-options'
 
-export function workflowStoreFactory<T extends object, U extends string | number = string>(initialStep: U, initialData: Partial<T> = {}) {
+export function workflowStoreFactory<T extends object, U extends string | number = string>(
+  transitionConfig: TransitionConfig<T, U>,
+  initialStep: U,
+  options: Partial<WorkflowOptions<T>> = {}
+) {
   interface WorkflowState {
     data: Partial<T>
     currentStep: U
@@ -14,7 +19,7 @@ export function workflowStoreFactory<T extends object, U extends string | number
   }
 
   const initialState: WorkflowState = {
-    data: initialData,
+    data: options.initialData ?? {},
     currentStep: initialStep,
     direction: 'forward',
     path: [],
@@ -29,8 +34,6 @@ export function workflowStoreFactory<T extends object, U extends string | number
       canGoBack: computed(() => state.path().length > 0)
     })),
     withMethods((state) => {
-      const transitionConfig: TransitionConfig<T, U> = inject(TRANSITION_CONFIG)
-
       return {
         next(data?: Partial<T>): void {
           const currentStep = state.currentStep()

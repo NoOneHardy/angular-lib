@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing'
 import {WorkflowStore, workflowStore, workflowStoreFactory} from './workflow.store'
-import {TRANSITION_CONFIG, TransitionConfig} from './model/transition-config'
+import {TransitionConfig} from './model/transition-config'
 
 interface WizardData {
   name?: string
@@ -41,9 +41,8 @@ function configureStore(
     providers: [
       {
         provide: workflowStore,
-        useClass: workflowStoreFactory<WizardData, Step>(initialStep, initialData)
-      },
-      {provide: TRANSITION_CONFIG, useValue: config}
+        useClass: workflowStoreFactory<WizardData, Step>(config as TransitionConfig<WizardData, Step>, initialStep, {initialData})
+      }
     ]
   }).inject<WorkflowStore<WizardData, Step>>(workflowStore)
 }
@@ -202,15 +201,18 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should treat a numeric step of 0 as a valid current step', () => {
-      const NumericStore = workflowStoreFactory<WizardData, number>(0)
       TestBed.resetTestingModule()
       TestBed.configureTestingModule({
         providers: [
-          NumericStore,
-          {provide: TRANSITION_CONFIG, useValue: {0: [{target: 1, default: true}]}}
+          {
+            provide: workflowStore,
+            useClass: workflowStoreFactory<WizardData, number>({
+              0: [{target: 1, default: true}]
+            }, 0)
+          }
         ]
       })
-      const store = TestBed.inject(NumericStore)
+      const store = TestBed.inject(workflowStore)
 
       store.next()
 
@@ -221,8 +223,12 @@ describe('workflowStoreFactory', () => {
     it('should treat a numeric target step of 0 as a valid destination', () => {
       TestBed.configureTestingModule({
         providers: [
-          {provide: workflowStore, useClass: workflowStoreFactory<WizardData, number>(1)},
-          {provide: TRANSITION_CONFIG, useValue: {1: [{target: 0, default: true}]}}
+          {
+            provide: workflowStore,
+            useClass: workflowStoreFactory<WizardData, number>({
+              1: [{target: 0, default: true}]
+            }, 1)
+          },
         ]
       })
       const store = TestBed.inject(workflowStore)

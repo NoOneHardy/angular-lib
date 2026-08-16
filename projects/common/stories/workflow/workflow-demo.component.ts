@@ -1,6 +1,6 @@
 import {Component, inject} from '@angular/core'
 import {WorkflowStore, workflowStore, workflowStoreFactory} from '../../src/lib/ngrx/workflow/workflow.store'
-import {TRANSITION_CONFIG, TransitionConfig} from '../../src/lib/ngrx/workflow/model/transition-config'
+import {TransitionConfig} from '../../src/lib/ngrx/workflow/model/transition-config'
 import {WorkflowDemoAccountComponent} from './components/workflow-demo-account/workflow-demo-account.component'
 import {FormsModule} from '@angular/forms'
 import {JsonPipe} from '@angular/common'
@@ -45,8 +45,7 @@ export const onboardingTransitions: TransitionConfig<OnboardingData, OnboardingS
 @Component({
   selector: 'n1h-workflow-demo',
   providers: [
-    {provide: workflowStore, useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(OnboardingStep.ACCOUNT)},
-    {provide: TRANSITION_CONFIG, useValue: onboardingTransitions}
+    {provide: workflowStore, useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(onboardingTransitions, OnboardingStep.ACCOUNT)},
   ],
   imports: [
     WorkflowDemoAccountComponent,
