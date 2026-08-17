@@ -15,25 +15,40 @@ enum Step {
   END = 'END'
 }
 
-const defaultConfig: TransitionConfig<WizardData, Step> = {
-  [Step.START]: [
-    {target: Step.MIDDLE, default: true},
-    {target: Step.MINOR_CONFIRMATION, canActivate: (data) => data.age && data.age < 18 || false},
-  ],
-  [Step.MINOR_CONFIRMATION]: [
-    {finish: true, default: true},
-    {target: Step.MIDDLE, canActivate: (data) => !!data.isMinorAgreementConfirmed},
-  ],
-  [Step.MIDDLE]: [
-    {target: Step.END, default: true},
-  ],
-  [Step.END]: [
-    {finish: true, default: true}
-  ]
+interface StepMeta {
+  title: string
+}
+
+const defaultConfig: TransitionConfig<WizardData, Step, StepMeta> = {
+  [Step.START]: {
+    meta: {title: 'Start'},
+    transitions: [
+      {target: Step.MIDDLE, default: true},
+      {target: Step.MINOR_CONFIRMATION, canActivate: (data) => data.age && data.age < 18 || false},
+    ]
+  },
+  [Step.MINOR_CONFIRMATION]: {
+    meta: {title: 'Minor confirmation'},
+    transitions: [
+      {finish: true, default: true},
+      {target: Step.MIDDLE, canActivate: (data) => !!data.isMinorAgreementConfirmed},
+    ]
+  },
+  [Step.MIDDLE]: {
+    transitions: [
+      {target: Step.END, default: true},
+    ]
+  },
+  [Step.END]: {
+    meta: {title: 'End'},
+    transitions: [
+      {finish: true, default: true}
+    ]
+  }
 }
 
 function configureStore(
-  config: Partial<TransitionConfig<WizardData, Step>> = defaultConfig,
+  config: Partial<TransitionConfig<WizardData, Step, StepMeta>> = defaultConfig,
   initialStep: Step = Step.START,
   initialData: Partial<WizardData> = {}
 ) {
@@ -41,7 +56,7 @@ function configureStore(
     providers: [
       {
         provide: workflowStore,
-        useClass: workflowStoreFactory<WizardData, Step>(config as TransitionConfig<WizardData, Step>, initialStep, {initialData})
+        useClass: workflowStoreFactory<WizardData, Step, StepMeta>(config as TransitionConfig<WizardData, Step, StepMeta>, initialStep, {initialData})
       }
     ]
   }).inject<WorkflowStore<WizardData, Step>>(workflowStore)
@@ -67,6 +82,71 @@ describe('workflowStoreFactory', () => {
 
     expect(store.currentStep()).toBe(Step.START)
     expect(store.data()).toEqual({name: 'Michael Scott'})
+  })
+
+  describe('currentMeta', () => {
+    it('should start with the meta of the initial step', () => {
+      const store = configureStore()
+
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
+
+    it('should be null when the initial step has no meta', () => {
+      const store = configureStore(defaultConfig, Step.MIDDLE)
+
+      expect(store.currentMeta()).toBeNull()
+    })
+
+    it('should update to the meta of the target step on a forward transition', () => {
+      const store = configureStore()
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toBeNull()
+    })
+
+    it('should pick up meta on a forward transition into a step that has one', () => {
+      const store = configureStore()
+
+      store.next({age: 12})
+
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+      expect(store.currentMeta()).toEqual({title: 'Minor confirmation'})
+    })
+
+    it('should keep meta of last active step when the workflow finishes', () => {
+      const store = configureStore({
+        [Step.START]: {meta: {title: 'Start'}, transitions: [{finish: true, default: true}]}
+      })
+
+      store.next()
+
+      expect(store.isFinished()).toBe(true)
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
+
+    it('should restore the meta of the previous step on back()', () => {
+      const store = configureStore()
+
+      store.next()
+      store.back()
+
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
+
+    it('should not change on a transition that errors', () => {
+      const store = configureStore({
+        [Step.START]: {meta: {title: 'Start'}, transitions: [{target: Step.MIDDLE, canActivate: () => false}]}
+      })
+
+      store.next()
+
+      expect(store.error()).toBe('No transition found')
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
   })
 
   describe('next', () => {
@@ -127,10 +207,12 @@ describe('workflowStoreFactory', () => {
 
     it('should pick the first matching guarded transition when multiple match', () => {
       const store = configureStore({
-        [Step.START]: [
-          {target: Step.MIDDLE, canActivate: () => true},
-          {target: Step.END, canActivate: () => true}
-        ]
+        [Step.START]: {
+          transitions: [
+            {target: Step.MIDDLE, canActivate: () => true},
+            {target: Step.END, canActivate: () => true}
+          ]
+        }
       })
 
       store.next()
@@ -140,7 +222,7 @@ describe('workflowStoreFactory', () => {
 
     it('should set an error when no guard matches and there is no default', () => {
       const store = configureStore({
-        [Step.START]: [{target: Step.MIDDLE, canActivate: () => false}]
+        [Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: () => false}]}
       })
 
       store.next()
@@ -151,7 +233,7 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should set an error when the transitions list for the current step is empty', () => {
-      const store = configureStore({[Step.START]: []})
+      const store = configureStore({[Step.START]: {transitions: []}})
 
       store.next()
 
@@ -159,8 +241,8 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.START)
     })
 
-    it('should set an error when transitions don\'t include the current step', () => {
-      const store = configureStore({[Step.START]: []}, Step.MIDDLE)
+    it('should set an error when the config for the current step has no transitions', () => {
+      const store = configureStore({[Step.MIDDLE]: {}} as Partial<TransitionConfig<WizardData, Step, StepMeta>>, Step.MIDDLE)
 
       store.next()
 
@@ -168,8 +250,17 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.MIDDLE)
     })
 
+    it('should set an error when transitions don\'t include the current step', () => {
+      const store = configureStore({[Step.START]: {transitions: []}}, Step.MIDDLE)
+
+      store.next()
+
+      expect(store.error()).toBe('No transition config found for current step')
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+    })
+
     it('should mark the workflow finished when the matching transition has no step', () => {
-      const store = configureStore({[Step.START]: [{finish: true, default: true}]})
+      const store = configureStore({[Step.START]: {transitions: [{finish: true, default: true}]}})
 
       store.next()
 
@@ -179,7 +270,7 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should not reset isFinished on a later successful transition', () => {
-      const store = configureStore({[Step.START]: [{finish: true, default: true}]})
+      const store = configureStore({[Step.START]: {transitions: [{finish: true, default: true}]}})
 
       store.next()
       store.next()
@@ -189,7 +280,7 @@ describe('workflowStoreFactory', () => {
 
     it('should treat an empty-string step as a valid, distinct step', () => {
       const store = configureStore(
-        {'': [{target: Step.MIDDLE, default: true}]} as unknown as Partial<TransitionConfig<WizardData, Step>>,
+        {'': {transitions: [{target: Step.MIDDLE, default: true}]}} as unknown as Partial<TransitionConfig<WizardData, Step, StepMeta>>,
         '' as Step
       )
 
@@ -207,7 +298,7 @@ describe('workflowStoreFactory', () => {
           {
             provide: workflowStore,
             useClass: workflowStoreFactory<WizardData, number>({
-              0: [{target: 1, default: true}]
+              0: {transitions: [{target: 1, default: true}]}
             }, 0)
           }
         ]
@@ -226,7 +317,7 @@ describe('workflowStoreFactory', () => {
           {
             provide: workflowStore,
             useClass: workflowStoreFactory<WizardData, number>({
-              1: [{target: 0, default: true}]
+              1: {transitions: [{target: 0, default: true}]}
             }, 1)
           },
         ]
@@ -240,15 +331,15 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should set an error instead of throwing when the transition config has no entry for the current step', () => {
-      const store = configureStore({} as TransitionConfig<WizardData, Step>)
+      const store = configureStore({} as TransitionConfig<WizardData, Step, StepMeta>)
 
       expect(() => store.next()).not.toThrow()
-      expect(store.error()).toBe('No transition found')
+      expect(store.error()).toBe('No transition config found for current step')
     })
 
     it('should clear a previously set error on a later successful transition', () => {
       const store = configureStore({
-        [Step.START]: [{target: Step.MIDDLE, canActivate: (data: WizardData) => !!data.name}]
+        [Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: (data: WizardData) => !!data.name}]}
       })
 
       store.next()
@@ -263,7 +354,7 @@ describe('workflowStoreFactory', () => {
 
     it('should clear a previously set error when the workflow finishes', () => {
       const store = configureStore({
-        [Step.START]: [{finish: true, canActivate: (data: WizardData) => !!data.name}]
+        [Step.START]: {transitions: [{finish: true, canActivate: (data: WizardData) => !!data.name}]}
       })
 
       store.next()
@@ -286,7 +377,7 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should push onto path when a transition finishes the workflow', () => {
-      const store = configureStore({[Step.START]: [{finish: true, default: true}]})
+      const store = configureStore({[Step.START]: {transitions: [{finish: true, default: true}]}})
 
       store.next()
 
@@ -294,7 +385,7 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should not push onto path when the transition errors', () => {
-      const store = configureStore({[Step.START]: [{target: Step.MIDDLE, canActivate: () => false}]})
+      const store = configureStore({[Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: () => false}]}})
 
       store.next()
 
@@ -369,8 +460,8 @@ describe('workflowStoreFactory', () => {
 
     it('should clear a previously set error on a successful step back', () => {
       const store = configureStore({
-        [Step.START]: [{target: Step.MIDDLE, default: true}],
-        [Step.MIDDLE]: [{target: Step.END, canActivate: () => false}]
+        [Step.START]: {transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {transitions: [{target: Step.END, canActivate: () => false}]}
       })
 
       store.next()

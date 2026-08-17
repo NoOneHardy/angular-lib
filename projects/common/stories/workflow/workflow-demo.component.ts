@@ -24,22 +24,38 @@ export enum OnboardingStep {
   PREFERENCES = 'PREFERENCES'
 }
 
-export type DemoOnboardingWorkflowStore = WorkflowStore<OnboardingData, OnboardingStep>
+export interface OnboardingStepMeta {
+  title: string
+}
 
-export const onboardingTransitions: TransitionConfig<OnboardingData, OnboardingStep> = {
-  [OnboardingStep.ACCOUNT]: [
-    {target: OnboardingStep.PROFILE, default: true}
-  ],
-  [OnboardingStep.PROFILE]: [
-    {target: OnboardingStep.PREFERENCES, canActivate: data => data.age && data.age >= 18 || false},
-    {target: OnboardingStep.GUARDIAN_CONSENT, default: true}
-  ],
-  [OnboardingStep.GUARDIAN_CONSENT]: [
-    {target: OnboardingStep.PREFERENCES, default: true}
-  ],
-  [OnboardingStep.PREFERENCES]: [
-    {finish: true, default: true}
-  ]
+export type DemoOnboardingWorkflowStore = WorkflowStore<OnboardingData, OnboardingStep, OnboardingStepMeta>
+
+export const onboardingTransitions: TransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
+  [OnboardingStep.ACCOUNT]: {
+    meta: {title: 'Account'},
+    transitions: [
+      {target: OnboardingStep.PROFILE, default: true}
+    ]
+  },
+  [OnboardingStep.PROFILE]: {
+    meta: {title: 'Profile'},
+    transitions: [
+      {target: OnboardingStep.PREFERENCES, canActivate: data => data.age && data.age >= 18 || false},
+      {target: OnboardingStep.GUARDIAN_CONSENT, default: true}
+    ]
+  },
+  [OnboardingStep.GUARDIAN_CONSENT]: {
+    meta: {title: 'Guardian consent'},
+    transitions: [
+      {target: OnboardingStep.PREFERENCES, default: true}
+    ]
+  },
+  [OnboardingStep.PREFERENCES]: {
+    meta: {title: 'Preferences'},
+    transitions: [
+      {finish: true, default: true}
+    ]
+  }
 }
 
 @Component({

@@ -106,20 +106,28 @@ enum OnboardingStep {
 }
 
 const transitions: TransitionConfig<OnboardingData, OnboardingStep> = {
-  [OnboardingStep.ACCOUNT]: [
-    {target: OnboardingStep.PROFILE, default: true}
-  ],
-  [OnboardingStep.PROFILE]: [
-    // branch: adults skip straight to preferences, minors go through an extra step
-    {target: OnboardingStep.PREFERENCES, canActivate: data => (data.age ?? 0) >= 18},
-    {target: OnboardingStep.GUARDIAN_CONSENT, default: true}
-  ],
-  [OnboardingStep.GUARDIAN_CONSENT]: [
-    {target: OnboardingStep.PREFERENCES, default: true}
-  ],
-  [OnboardingStep.PREFERENCES]: [
-    {finish: true, default: true}
-  ]
+  [OnboardingStep.ACCOUNT]: {
+    transitions: [
+      {target: OnboardingStep.PROFILE, default: true}
+    ]
+  },
+  [OnboardingStep.PROFILE]: {
+    transitions: [
+      // branch: adults skip straight to preferences, minors go through an extra step
+      {target: OnboardingStep.PREFERENCES, canActivate: data => (data.age ?? 0) >= 18},
+      {target: OnboardingStep.GUARDIAN_CONSENT, default: true}
+    ]
+  },
+  [OnboardingStep.GUARDIAN_CONSENT]: {
+    transitions: [
+      {target: OnboardingStep.PREFERENCES, default: true}
+    ]
+  },
+  [OnboardingStep.PREFERENCES]: {
+    transitions: [
+      {finish: true, default: true}
+    ]
+  }
 }
 
 @Component({
@@ -134,10 +142,11 @@ export class OnboardingComponent {
 }
 ```
 
-`workflowStoreFactory<T, U>(transitions: TransitionConfig<T, U>, initialStep: U, options?: Partial<WorkflowOptions<T>>)` is generic over:
+`workflowStoreFactory<T, U, M>(transitions: TransitionConfig<T, U, M>, initialStep: U, options?: Partial<WorkflowOptions<T>>)` is generic over:
 - `T` — the shape of the data collected across the whole workflow (each step usually contributes a partial slice of it).
 - `U` — the type used for step identifiers, either `string` (the default) or `number`. It is recommended to declare the
 steps as enum and pass the enum type as `U` to get type safety and autocompletion.
+- `M` — the shape of the optional per-step metadata (see [Step metadata](#step-metadata)), `object` by default.
 
 `options` bundles optional store configuration as `WorkflowOptions<T>`:
 
@@ -187,6 +196,12 @@ providers: [
     <td><code>currentStep</code></td>
     <td><code>U</code></td>
     <td>The step the workflow is currently on.</td>
+  </tr>
+  <tr>
+    <td><code>currentMeta</code></td>
+    <td><code>M | null</code></td>
+    <td>The <code>meta</code> of the current step's <code>TransitionConfig</code> entry (see
+      <a href="#step-metadata">Step metadata</a>), or <code>null</code> if that step defines none.</td>
   </tr>
   <tr>
     <td><code>direction</code></td>
@@ -262,8 +277,8 @@ validation needs to report a failure that isn't naturally expressed as "no trans
 
 ## Transitions
 
-Each step in a `TransitionConfig<T, U>` maps to an ordered array of `Transition<T, U>` — `next()`
-picks the **first** one that applies:
+Each step in a `TransitionConfig<T, U, M>` maps to a `{transitions, meta?}` entry. `transitions` is
+an ordered array of `Transition<T, U>` — `next()` picks the **first** one that applies:
 
 1. The first transition in the array whose `canActivate(data)` returns `true`.
 2. Otherwise, the first transition in the array marked `default: true`.
@@ -283,6 +298,42 @@ A transition is one of `{target, canActivate}`, `{target, default}`, `{finish: t
 or `{finish: true, default}` — `target` and `finish` are mutually exclusive, as are `canActivate`
 and `default`.
 
+## Step metadata
+
+A `TransitionConfig<T, U, M>` entry can carry an optional `meta: M` alongside its `transitions` —
+data about the step itself (a title, an icon, progress-bar info, ...) that a container component
+can read without needing a `switch` over `currentStep`:
+
+```ts
+interface StepMeta {
+  title: string
+}
+
+const transitions: TransitionConfig<OnboardingData, OnboardingStep, StepMeta> = {
+  [OnboardingStep.ACCOUNT]: {
+    meta: {title: 'Account'},
+    transitions: [
+      {target: OnboardingStep.PROFILE, default: true}
+    ]
+  },
+  // ...
+}
+```
+
+The store exposes the current step's `meta` as the `currentMeta` signal, typed `M | null`:
+
+```html
+@if (store.currentMeta(); as meta) {
+  <h2>{{ meta.title }}</h2>
+}
+```
+
+`currentMeta` is set from the initial step on store creation, and updates on every successful
+`next()` or `back()` to the `meta` of the step being moved to — `null` if that step's config entry
+doesn't declare one. It is left untouched by a transition that errors, and — like `currentStep` —
+keeps the last active step's `meta` once the workflow finishes, since `next()` doesn't change
+`currentStep` when a transition has `finish: true`.
+
 ## Steps that are `0` or `''`
 
 `U` is typed as `string | number`, and both an empty string and the number `0` are valid step
@@ -291,8 +342,9 @@ numeric workflow that starts at step `0` behaves the same as one starting at ste
 
 ## Missing config entries
 
-If `TransitionConfig` has no entry at all for `currentStep` (a step referenced by a transition but
-never defined, or a typo), `next()` treats that the same as an empty transition list: `error` is
-set to `'No transition found'` rather than throwing.
+`next()` distinguishes two ways a step can be misconfigured, rather than throwing:
 
-<Source of={WorkflowDemoStories.Interactive}/>
+- `TransitionConfig` has no entry at all for `currentStep` (a step referenced by a transition but
+  never defined, or a typo) — `error` is set to `'No transition config found for current step'`.
+- The entry exists but its `transitions` is missing or empty — treated the same as no transition
+  matching, so `error` is set to `'No transition found'`.
