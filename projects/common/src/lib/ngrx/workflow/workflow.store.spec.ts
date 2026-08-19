@@ -1,5 +1,5 @@
 import {TestBed} from '@angular/core/testing'
-import {WorkflowStore, workflowStore, workflowStoreFactory} from './workflow.store'
+import {PositionedWorkflowStore, WorkflowStore, workflowStore, workflowStoreFactory} from './workflow.store'
 import {PositionedTransitionConfig, TransitionConfig} from './model/transition-config'
 
 interface WizardData {
@@ -103,7 +103,7 @@ function configurePositionedStore(initialStep: Step = Step.START) {
         useClass: workflowStoreFactory<WizardData, Step, PositionedStepMeta>(positionedConfig, initialStep, {providePositions: true})
       }
     ]
-  }).inject<WorkflowStore<WizardData, Step, PositionedStepMeta>>(workflowStore)
+  }).inject<PositionedWorkflowStore<WizardData, Step, PositionedStepMeta>>(workflowStore)
 }
 
 describe('workflowStoreFactory', () => {
@@ -256,16 +256,16 @@ describe('workflowStoreFactory', () => {
       expect(store.currentIndex()).toBe(2)
     })
 
-    it('should resolve every position signal to null when providePositions is omitted', () => {
+    it('should not carry any position signal when providePositions is omitted', () => {
       const store = configureStore()
 
-      expect(store.positions()).toBeNull()
-      expect(store.currentPosition()).toBeNull()
-      expect(store.currentIndex()).toBeNull()
-      expect(store.totalPositions()).toBeNull()
+      expect('positions' in store).toBe(false)
+      expect('currentPosition' in store).toBe(false)
+      expect('currentIndex' in store).toBe(false)
+      expect('totalPositions' in store).toBe(false)
     })
 
-    it('should resolve every position signal to null when providePositions is false, even with positions configured', () => {
+    it('should not carry any position signal when providePositions is false, even with positions configured', () => {
       const store = TestBed.configureTestingModule({
         providers: [
           {
@@ -275,10 +275,10 @@ describe('workflowStoreFactory', () => {
         ]
       }).inject<WorkflowStore<WizardData, Step, PositionedStepMeta>>(workflowStore)
 
-      expect(store.positions()).toBeNull()
-      expect(store.currentPosition()).toBeNull()
-      expect(store.currentIndex()).toBeNull()
-      expect(store.totalPositions()).toBeNull()
+      expect('positions' in store).toBe(false)
+      expect('currentPosition' in store).toBe(false)
+      expect('currentIndex' in store).toBe(false)
+      expect('totalPositions' in store).toBe(false)
     })
   })
 

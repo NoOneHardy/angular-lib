@@ -83,8 +83,9 @@ The demo below is an onboarding wizard built on top of the store: `ACCOUNT` → 
 Each step validates its own fields locally and only calls `next()` once they're valid — try leaving a field empty to see that
 handled in the step itself, then enter an age under 18 to see the workflow branch to the
 `GUARDIAN_CONSENT` step instead of skipping straight to `PREFERENCES`.
-The step counter above the form comes from [Step positions](#step-positions) — an adult skips position 3, so the
-counter jumps from "Step 2 of 4" straight to "Step 4 of 4".
+The step counter above the form comes from [Step positions](#step-positions) — the extra `GUARDIAN_CONSENT` step
+shares position 2 with `PROFILE`, so a minor's longer path still reads "Step 2 of 3" there instead of stretching
+the counter.
 
 <Canvas of={WorkflowDemoStories.Interactive}/>
 <Controls of={WorkflowDemoStories.Interactive}/>
@@ -170,8 +171,8 @@ steps as enum and pass the enum type as `U` to get type safety and autocompletio
     <td><code>providePositions</code></td>
     <td><code>boolean</code></td>
     <td>Tracks where the current step sits in the workflow (see <a href="#step-positions">Step positions</a>). With
-      <code>true</code>, every step has to declare a <code>meta.position</code>; with <code>false</code> (the default)
-      the position signals stay <code>null</code>.</td>
+      <code>true</code>, every step has to declare a <code>meta.position</code> and the store gains the four position
+      signals; with <code>false</code> (the default) it doesn't carry them at all.</td>
   </tr>
   </tbody>
 </table>
@@ -246,28 +247,40 @@ providers: [
     <td><code>true</code> while <code>path</code> has at least one step to pop — use it to conditionally show
       a "back" control before calling <code>back()</code>.</td>
   </tr>
+  </tbody>
+</table>
+
+Enabling `providePositions` adds four more signals (see [Step positions](#step-positions)) — without the option
+they are not part of the store at all:
+
+<table>
+  <thead>
+  <tr>
+    <th>Signal</th>
+    <th>Type</th>
+    <th>Description</th>
+  </tr>
+  </thead>
+  <tbody>
   <tr>
     <td><code>positions</code></td>
-    <td><code>(string | number)[] | null</code> <em>(computed)</em></td>
-    <td>Every position the workflow can reach, in config order and without duplicates (see
-      <a href="#step-positions">Step positions</a>), or <code>null</code> without
-      <code>providePositions</code>.</td>
+    <td><code>(string | number)[]</code> <em>(computed)</em></td>
+    <td>Every position the workflow can reach, in config order and without duplicates.</td>
   </tr>
   <tr>
     <td><code>currentPosition</code></td>
     <td><code>string | number | null</code> <em>(computed)</em></td>
-    <td>Position of the current step, or <code>null</code> without <code>providePositions</code>.</td>
+    <td>Position of the current step.</td>
   </tr>
   <tr>
     <td><code>currentIndex</code></td>
     <td><code>number | null</code> <em>(computed)</em></td>
-    <td>Index of <code>currentPosition</code> within <code>positions</code>, or <code>null</code> without
-      <code>providePositions</code>.</td>
+    <td>Index of <code>currentPosition</code> within <code>positions</code>.</td>
   </tr>
   <tr>
     <td><code>totalPositions</code></td>
-    <td><code>number | null</code> <em>(computed)</em></td>
-    <td><code>positions().length</code>, or <code>null</code> without <code>providePositions</code>.</td>
+    <td><code>number</code> <em>(computed)</em></td>
+    <td><code>positions().length</code>.</td>
   </tr>
   </tbody>
 </table>
@@ -416,14 +429,21 @@ positions works just as well as the plain numbers above:
 ```
 
 `positions` lists each position exactly once, in the order the steps are declared in the config. Two steps may
-share a position — handy when a branch offers alternative steps for the same stage: both then report the same
-`currentIndex`, and `totalPositions` stays the number of *distinct* positions. Positions are fixed slots in the
-workflow rather than a count of the steps taken, so a branch that skips a step (as the demo above does for adults)
-also skips its position.
+share a position — handy when a branch adds or swaps a step within the same stage, as the demo above does with its
+guardian-consent step: both steps then report the same `currentIndex`, and `totalPositions` stays the number of
+*distinct* positions. Positions are fixed slots in the workflow rather than a count of the steps taken, so a branch
+that skips a position's only step skips that position too.
 
-Without `providePositions`, `meta` stays optional and `positions`, `currentPosition`, `currentIndex` and
-`totalPositions` all resolve to `null`. They are on the store either way, so a component reading them doesn't have
-to know how the store was configured.
+Without `providePositions`, `meta` stays optional and the store carries no position signals at all — reading
+`positions()`, `currentPosition()`, `currentIndex()` or `totalPositions()` on such a store is a compile error, not
+a `null`. The two kinds of store therefore have two types: `WorkflowStore<T, U, M>` without positions and
+`PositionedWorkflowStore<T, U, M>` with them. The `workflowStore` token is typed as the former, so a component of a
+positioned workflow asks for the latter explicitly:
+
+```ts
+// onboarding-account.component.ts
+private workflow = inject<PositionedWorkflowStore<OnboardingData, OnboardingStep, OnboardingStepMeta>>(workflowStore)
+```
 
 ## Steps that are `0` or `''`
 

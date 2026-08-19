@@ -20,7 +20,7 @@ import {MatButton} from '@angular/material/button'
   styleUrl: '../../workflow-demo.shared.scss'
 })
 export class WorkflowDemoGuardianComponent implements OnInit {
-  private workflow: DemoOnboardingWorkflowStore = inject(workflowStore)
+  private workflow = inject<DemoOnboardingWorkflowStore>(workflowStore)
 
   form = new FormGroup({
     guardianEmail: new FormControl<string>('', {

@@ -1,5 +1,5 @@
 import {Component, inject} from '@angular/core'
-import {WorkflowStore, workflowStore, workflowStoreFactory} from '../../src/lib/ngrx/workflow/workflow.store'
+import {PositionedWorkflowStore, workflowStore, workflowStoreFactory} from '../../src/lib/ngrx/workflow/workflow.store'
 import {PositionedTransitionConfig} from '../../src/lib/ngrx/workflow/model/transition-config'
 import {WorkflowDemoAccountComponent} from './components/workflow-demo-account/workflow-demo-account.component'
 import {FormsModule} from '@angular/forms'
@@ -29,7 +29,7 @@ export interface OnboardingStepMeta {
   position: number
 }
 
-export type DemoOnboardingWorkflowStore = WorkflowStore<OnboardingData, OnboardingStep, OnboardingStepMeta>
+export type DemoOnboardingWorkflowStore = PositionedWorkflowStore<OnboardingData, OnboardingStep, OnboardingStepMeta>
 
 export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
   [OnboardingStep.ACCOUNT]: {
@@ -46,13 +46,13 @@ export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, O
     ]
   },
   [OnboardingStep.GUARDIAN_CONSENT]: {
-    meta: {title: 'Guardian consent', position: 3},
+    meta: {title: 'Guardian', position: 2},
     transitions: [
       {target: OnboardingStep.PREFERENCES, default: true}
     ]
   },
   [OnboardingStep.PREFERENCES]: {
-    meta: {title: 'Preferences', position: 4},
+    meta: {title: 'Preferences', position: 3},
     transitions: [
       {finish: true, default: true}
     ]
@@ -83,6 +83,6 @@ export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, O
   styleUrl: './workflow-demo.shared.scss'
 })
 export class WorkflowDemoComponent {
-  protected readonly store: DemoOnboardingWorkflowStore = inject(workflowStore)
+  protected readonly store = inject<DemoOnboardingWorkflowStore>(workflowStore)
   protected readonly OnboardingStep = OnboardingStep
 }

@@ -1,15 +1,27 @@
 import {patchState, signalStore, withComputed, withMethods, withState} from '@ngrx/signals'
-import {computed, InjectionToken} from '@angular/core'
+import {computed, InjectionToken, Signal, Type} from '@angular/core'
 import {PositionedTransitionConfig, TransitionConfig} from './model/transition-config'
 import {Transition} from './model/transition'
 import {WorkflowOptions} from './model/workflow-options'
 import {Position} from './model/position'
 
 /** Options of a workflow that tracks step positions. */
-type PositionedWorkflowOptions<T extends object> = Partial<WorkflowOptions<T>> & {providePositions: true}
+type PositionedWorkflowOptions<T extends object> = Partial<WorkflowOptions<T>> & { providePositions: true }
 
 /** Options of a workflow that doesn't track step positions. */
-type PlainWorkflowOptions<T extends object> = Partial<WorkflowOptions<T>> & {providePositions?: false}
+type PlainWorkflowOptions<T extends object> = Partial<WorkflowOptions<T>> & { providePositions?: false }
+
+/** The signals a store carries on top of the rest once `providePositions` is enabled. */
+interface PositionSignals {
+  /** Every position the workflow can reach, in config order and without duplicates. */
+  positions: Signal<Position[]>
+  /** Position of the current step, or `null` if that step's `meta` carries none. */
+  currentPosition: Signal<Position | null>
+  /** Index of `currentPosition` within `positions`, or `null` if there is no current position. */
+  currentIndex: Signal<number | null>
+  /** Number of positions the workflow can reach. */
+  totalPositions: Signal<number>
+}
 
 /**
  * Builds a workflow store class that tracks step positions.
@@ -21,11 +33,11 @@ export function workflowStoreFactory<T extends object, U extends string | number
   transitionConfig: PositionedTransitionConfig<T, U, M>,
   initialStep: U,
   options: PositionedWorkflowOptions<T>
-): WorkflowStoreClass<T, U, M>
+): PositionedWorkflowStoreClass<T, U, M>
 /**
  * Builds a workflow store class without position tracking.
  *
- * Step `meta` stays optional, and the position signals of the store all resolve to `null`.
+ * Step `meta` stays optional, and the store carries no position signals at all.
  */
 export function workflowStoreFactory<T extends object, U extends string | number = string, M extends object = object>(
   transitionConfig: TransitionConfig<T, U, M>,
@@ -36,7 +48,7 @@ export function workflowStoreFactory<T extends object, U extends string | number
   transitionConfig: TransitionConfig<T, U, M>,
   initialStep: U,
   options: Partial<WorkflowOptions<T>> = {}
-): WorkflowStoreClass<T, U, M> {
+): PositionedWorkflowStoreClass<T, U, M> {
   return createWorkflowStore<T, U, M>(transitionConfig, initialStep, options)
 }
 
@@ -75,25 +87,11 @@ export function createWorkflowStore<T extends object, U extends string | number,
 
   return signalStore(
     withState(initialState),
-    withComputed((state) => {
-      /** Position of the current step, or `null` while `providePositions` is off. */
-      const currentPosition = computed(() => positions === null ? null : positionOf(state.currentMeta()))
-
-      return {
-        hasError: computed(() => state.error() !== null),
-        canGoBack: computed(() => state.path().length > 0),
-        /** Every position the workflow can reach, or `null` while `providePositions` is off. */
-        positions: computed(() => positions),
-        currentPosition,
-        /** Index of {@link currentPosition} within {@link positions}, or `null` while `providePositions` is off. */
-        currentIndex: computed(() => {
-          const position = currentPosition()
-          return positions === null || position === null ? null : positions.indexOf(position)
-        }),
-        /** Number of positions the workflow can reach, or `null` while `providePositions` is off. */
-        totalPositions: computed(() => positions?.length ?? null)
-      }
-    }),
+    withComputed((state) => ({
+      hasError: computed(() => state.error() !== null),
+      canGoBack: computed(() => state.path().length > 0),
+      ...positionSignals(state)
+    })),
     withMethods((state) => {
       return {
         next(data?: Partial<T>): void {
@@ -154,6 +152,27 @@ export function createWorkflowStore<T extends object, U extends string | number,
     return transitions.find(t => t.default) ?? null
   }
 
+  /**
+   * Builds the position signals — an empty object while `providePositions` is off, so a store without
+   * position tracking doesn't carry them at all. The return type declares them either way;
+   * {@link workflowStoreFactory} is what takes them off the store type again for that case.
+   */
+  function positionSignals(state: { currentMeta: Signal<M | null> }): PositionSignals {
+    if (positions === null) return {} as PositionSignals
+
+    const currentPosition = computed(() => positionOf(state.currentMeta()))
+
+    return {
+      positions: computed(() => positions),
+      currentPosition,
+      currentIndex: computed(() => {
+        const position = currentPosition()
+        return position === null ? null : positions.indexOf(position)
+      }),
+      totalPositions: computed(() => positions.length)
+    }
+  }
+
   /** Collects the position of every step, keeping the config order and dropping duplicates. */
   function collectPositions(): Position[] {
     const steps: TransitionConfig<T, U, M>[U][] = Object.values(transitionConfig)
@@ -169,12 +188,18 @@ export function createWorkflowStore<T extends object, U extends string | number,
    * {@link workflowStoreFactory} is what guarantees one, so it is read back defensively here.
    */
   function positionOf(meta: M | null | undefined): Position | null {
-    return (meta as {position?: Position} | null | undefined)?.position ?? null
+    return (meta as { position?: Position } | null | undefined)?.position ?? null
   }
 }
 
-/** The store class {@link workflowStoreFactory} builds. */
-export type WorkflowStoreClass<T extends object, U extends string | number = string, M extends object = object> = ReturnType<typeof createWorkflowStore<T, U, M>>
-export type WorkflowStore<T extends object, U extends | string | number = string, M extends object = object> = InstanceType<WorkflowStoreClass<T, U, M>>
+/** The store class {@link workflowStoreFactory} builds with position tracking. */
+export type PositionedWorkflowStoreClass<T extends object, U extends string | number = string, M extends object = object> = ReturnType<typeof createWorkflowStore<T, U, M>>
+/** The store class {@link workflowStoreFactory} builds without position tracking. */
+export type WorkflowStoreClass<T extends object, U extends string | number = string, M extends object = object> = Type<WorkflowStore<T, U, M>>
+
+/** A workflow store that tracks step positions, built with the `providePositions` option. */
+export type PositionedWorkflowStore<T extends object, U extends string | number = string, M extends object = object> = InstanceType<PositionedWorkflowStoreClass<T, U, M>>
+/** A workflow store without position tracking — the position signals aren't part of it. */
+export type WorkflowStore<T extends object, U extends | string | number = string, M extends object = object> = Omit<InstanceType<PositionedWorkflowStoreClass<T, U, M>>, keyof PositionSignals>
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const workflowStore = new InjectionToken<WorkflowStore<any, any, any>>('An instance of the workflow store')

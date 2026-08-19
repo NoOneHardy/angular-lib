@@ -14,7 +14,7 @@ import {MatButton} from '@angular/material/button'
   styleUrl: '../../workflow-demo.shared.scss'
 })
 export class WorkflowDemoPreferencesComponent {
-  private workflow: DemoOnboardingWorkflowStore = inject(workflowStore)
+  private workflow = inject<DemoOnboardingWorkflowStore>(workflowStore)
 
   data = computed(() => this.workflow.data())
 

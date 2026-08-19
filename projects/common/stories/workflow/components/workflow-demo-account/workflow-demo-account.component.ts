@@ -19,7 +19,7 @@ import {DemoOnboardingWorkflowStore} from '../../workflow-demo.component'
   styleUrl: '../../workflow-demo.shared.scss'
 })
 export class WorkflowDemoAccountComponent implements OnInit {
-  private workflow: DemoOnboardingWorkflowStore = inject(workflowStore)
+  private workflow = inject<DemoOnboardingWorkflowStore>(workflowStore)
 
   form = new FormGroup({
     email: new FormControl<string>('', {nonNullable: true, validators: [Validators.required, Validators.email]})
