@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing'
 import {WorkflowStore, workflowStore, workflowStoreFactory} from './workflow.store'
-import {TransitionConfig} from './model/transition-config'
+import {PositionedTransitionConfig, TransitionConfig} from './model/transition-config'
 
 interface WizardData {
   name?: string
@@ -47,6 +47,39 @@ const defaultConfig: TransitionConfig<WizardData, Step, StepMeta> = {
   }
 }
 
+interface PositionedStepMeta extends StepMeta {
+  position: number
+}
+
+// MINOR_CONFIRMATION and MIDDLE are two branches of the same stage, so they share a position
+const positionedConfig: PositionedTransitionConfig<WizardData, Step, PositionedStepMeta> = {
+  [Step.START]: {
+    meta: {title: 'Start', position: 10},
+    transitions: [
+      {target: Step.MIDDLE, default: true},
+      {target: Step.MINOR_CONFIRMATION, canActivate: (data) => data.age && data.age < 18 || false},
+    ]
+  },
+  [Step.MINOR_CONFIRMATION]: {
+    meta: {title: 'Minor confirmation', position: 20},
+    transitions: [
+      {target: Step.END, default: true},
+    ]
+  },
+  [Step.MIDDLE]: {
+    meta: {title: 'Middle', position: 20},
+    transitions: [
+      {target: Step.END, default: true},
+    ]
+  },
+  [Step.END]: {
+    meta: {title: 'End', position: 30},
+    transitions: [
+      {finish: true, default: true}
+    ]
+  }
+}
+
 function configureStore(
   config: Partial<TransitionConfig<WizardData, Step, StepMeta>> = defaultConfig,
   initialStep: Step = Step.START,
@@ -60,6 +93,17 @@ function configureStore(
       }
     ]
   }).inject<WorkflowStore<WizardData, Step>>(workflowStore)
+}
+
+function configurePositionedStore(initialStep: Step = Step.START) {
+  return TestBed.configureTestingModule({
+    providers: [
+      {
+        provide: workflowStore,
+        useClass: workflowStoreFactory<WizardData, Step, PositionedStepMeta>(positionedConfig, initialStep, {providePositions: true})
+      }
+    ]
+  }).inject<WorkflowStore<WizardData, Step, PositionedStepMeta>>(workflowStore)
 }
 
 describe('workflowStoreFactory', () => {
@@ -146,6 +190,95 @@ describe('workflowStoreFactory', () => {
 
       expect(store.error()).toBe('No transition found')
       expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
+  })
+
+  describe('positions', () => {
+    it('should expose every position of the config, without duplicates', () => {
+      const store = configurePositionedStore()
+
+      expect(store.positions()).toEqual([10, 20, 30])
+      expect(store.totalPositions()).toBe(3)
+    })
+
+    it('should start on the position of the initial step', () => {
+      const store = configurePositionedStore()
+
+      expect(store.currentPosition()).toBe(10)
+      expect(store.currentIndex()).toBe(0)
+    })
+
+    it('should start on the position of a later initial step', () => {
+      const store = configurePositionedStore(Step.END)
+
+      expect(store.currentPosition()).toBe(30)
+      expect(store.currentIndex()).toBe(2)
+    })
+
+    it('should move to the position of the target step on a forward transition', () => {
+      const store = configurePositionedStore()
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentPosition()).toBe(20)
+      expect(store.currentIndex()).toBe(1)
+    })
+
+    it('should resolve steps that share a position to the same index', () => {
+      const store = configurePositionedStore()
+
+      store.next({age: 12})
+
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+      expect(store.currentPosition()).toBe(20)
+      expect(store.currentIndex()).toBe(1)
+    })
+
+    it('should restore the position of the previous step on back()', () => {
+      const store = configurePositionedStore()
+
+      store.next()
+      store.back()
+
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentPosition()).toBe(10)
+      expect(store.currentIndex()).toBe(0)
+    })
+
+    it('should keep the position of the last active step when the workflow finishes', () => {
+      const store = configurePositionedStore(Step.END)
+
+      store.next()
+
+      expect(store.isFinished()).toBe(true)
+      expect(store.currentPosition()).toBe(30)
+      expect(store.currentIndex()).toBe(2)
+    })
+
+    it('should resolve every position signal to null when providePositions is omitted', () => {
+      const store = configureStore()
+
+      expect(store.positions()).toBeNull()
+      expect(store.currentPosition()).toBeNull()
+      expect(store.currentIndex()).toBeNull()
+      expect(store.totalPositions()).toBeNull()
+    })
+
+    it('should resolve every position signal to null when providePositions is false, even with positions configured', () => {
+      const store = TestBed.configureTestingModule({
+        providers: [
+          {
+            provide: workflowStore,
+            useClass: workflowStoreFactory<WizardData, Step, PositionedStepMeta>(positionedConfig, Step.START, {providePositions: false})
+          }
+        ]
+      }).inject<WorkflowStore<WizardData, Step, PositionedStepMeta>>(workflowStore)
+
+      expect(store.positions()).toBeNull()
+      expect(store.currentPosition()).toBeNull()
+      expect(store.currentIndex()).toBeNull()
+      expect(store.totalPositions()).toBeNull()
     })
   })
 

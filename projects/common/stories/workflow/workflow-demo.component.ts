@@ -1,6 +1,6 @@
 import {Component, inject} from '@angular/core'
 import {WorkflowStore, workflowStore, workflowStoreFactory} from '../../src/lib/ngrx/workflow/workflow.store'
-import {TransitionConfig} from '../../src/lib/ngrx/workflow/model/transition-config'
+import {PositionedTransitionConfig} from '../../src/lib/ngrx/workflow/model/transition-config'
 import {WorkflowDemoAccountComponent} from './components/workflow-demo-account/workflow-demo-account.component'
 import {FormsModule} from '@angular/forms'
 import {JsonPipe} from '@angular/common'
@@ -26,32 +26,33 @@ export enum OnboardingStep {
 
 export interface OnboardingStepMeta {
   title: string
+  position: number
 }
 
 export type DemoOnboardingWorkflowStore = WorkflowStore<OnboardingData, OnboardingStep, OnboardingStepMeta>
 
-export const onboardingTransitions: TransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
+export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
   [OnboardingStep.ACCOUNT]: {
-    meta: {title: 'Account'},
+    meta: {title: 'Account', position: 1},
     transitions: [
       {target: OnboardingStep.PROFILE, default: true}
     ]
   },
   [OnboardingStep.PROFILE]: {
-    meta: {title: 'Profile'},
+    meta: {title: 'Profile', position: 2},
     transitions: [
       {target: OnboardingStep.PREFERENCES, canActivate: data => data.age && data.age >= 18 || false},
       {target: OnboardingStep.GUARDIAN_CONSENT, default: true}
     ]
   },
   [OnboardingStep.GUARDIAN_CONSENT]: {
-    meta: {title: 'Guardian consent'},
+    meta: {title: 'Guardian consent', position: 3},
     transitions: [
       {target: OnboardingStep.PREFERENCES, default: true}
     ]
   },
   [OnboardingStep.PREFERENCES]: {
-    meta: {title: 'Preferences'},
+    meta: {title: 'Preferences', position: 4},
     transitions: [
       {finish: true, default: true}
     ]
@@ -61,7 +62,14 @@ export const onboardingTransitions: TransitionConfig<OnboardingData, OnboardingS
 @Component({
   selector: 'n1h-workflow-demo',
   providers: [
-    {provide: workflowStore, useClass: workflowStoreFactory<OnboardingData, OnboardingStep>(onboardingTransitions, OnboardingStep.ACCOUNT)},
+    {
+      provide: workflowStore,
+      useClass: workflowStoreFactory<OnboardingData, OnboardingStep, OnboardingStepMeta>(
+        onboardingTransitions,
+        OnboardingStep.ACCOUNT,
+        {providePositions: true}
+      )
+    },
   ],
   imports: [
     WorkflowDemoAccountComponent,

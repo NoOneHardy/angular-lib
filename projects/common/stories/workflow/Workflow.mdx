@@ -83,6 +83,8 @@ The demo below is an onboarding wizard built on top of the store: `ACCOUNT` → 
 Each step validates its own fields locally and only calls `next()` once they're valid — try leaving a field empty to see that
 handled in the step itself, then enter an age under 18 to see the workflow branch to the
 `GUARDIAN_CONSENT` step instead of skipping straight to `PREFERENCES`.
+The step counter above the form comes from [Step positions](#step-positions) — an adult skips position 3, so the
+counter jumps from "Step 2 of 4" straight to "Step 4 of 4".
 
 <Canvas of={WorkflowDemoStories.Interactive}/>
 <Controls of={WorkflowDemoStories.Interactive}/>
@@ -164,6 +166,13 @@ steps as enum and pass the enum type as `U` to get type safety and autocompletio
     <td><code>T</code></td>
     <td>Seeds <code>data</code> before the first transition runs.</td>
   </tr>
+  <tr>
+    <td><code>providePositions</code></td>
+    <td><code>boolean</code></td>
+    <td>Tracks where the current step sits in the workflow (see <a href="#step-positions">Step positions</a>). With
+      <code>true</code>, every step has to declare a <code>meta.position</code>; with <code>false</code> (the default)
+      the position signals stay <code>null</code>.</td>
+  </tr>
   </tbody>
 </table>
 
@@ -236,6 +245,29 @@ providers: [
     <td><code>boolean</code> <em>(computed)</em></td>
     <td><code>true</code> while <code>path</code> has at least one step to pop — use it to conditionally show
       a "back" control before calling <code>back()</code>.</td>
+  </tr>
+  <tr>
+    <td><code>positions</code></td>
+    <td><code>(string | number)[] | null</code> <em>(computed)</em></td>
+    <td>Every position the workflow can reach, in config order and without duplicates (see
+      <a href="#step-positions">Step positions</a>), or <code>null</code> without
+      <code>providePositions</code>.</td>
+  </tr>
+  <tr>
+    <td><code>currentPosition</code></td>
+    <td><code>string | number | null</code> <em>(computed)</em></td>
+    <td>Position of the current step, or <code>null</code> without <code>providePositions</code>.</td>
+  </tr>
+  <tr>
+    <td><code>currentIndex</code></td>
+    <td><code>number | null</code> <em>(computed)</em></td>
+    <td>Index of <code>currentPosition</code> within <code>positions</code>, or <code>null</code> without
+      <code>providePositions</code>.</td>
+  </tr>
+  <tr>
+    <td><code>totalPositions</code></td>
+    <td><code>number | null</code> <em>(computed)</em></td>
+    <td><code>positions().length</code>, or <code>null</code> without <code>providePositions</code>.</td>
   </tr>
   </tbody>
 </table>
@@ -333,6 +365,65 @@ The store exposes the current step's `meta` as the `currentMeta` signal, typed `
 doesn't declare one. It is left untouched by a transition that errors, and — like `currentStep` —
 keeps the last active step's `meta` once the workflow finishes, since `next()` doesn't change
 `currentStep` when a transition has `finish: true`.
+
+## Step positions
+
+Steps and positions aren't the same thing: a branching workflow can send users through different steps while
+what they see as their progress stays the same. Setting the `providePositions` option makes the store track
+that — every step declares where it sits through `meta.position`, and the store derives four signals from it:
+
+```ts
+import {workflowStoreFactory, workflowStore, PositionedTransitionConfig} from '@no1hardy/angular-common'
+
+interface OnboardingStepMeta {
+  title: string
+  position: number // `string | number`, so enums work as well
+}
+
+const transitions: PositionedTransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
+  [OnboardingStep.ACCOUNT]: {
+    meta: {title: 'Account', position: 1},
+    transitions: [
+      {target: OnboardingStep.PROFILE, default: true}
+    ]
+  },
+  // ...
+}
+
+@Component({
+  providers: [
+    {
+      provide: workflowStore,
+      useClass: workflowStoreFactory<OnboardingData, OnboardingStep, OnboardingStepMeta>(
+        transitions,
+        OnboardingStep.ACCOUNT,
+        {providePositions: true}
+      )
+    }
+  ]
+})
+export class OnboardingComponent {
+}
+```
+
+With the option set, `meta` is mandatory on every step and has to carry a `position` — the factory takes a
+`PositionedTransitionConfig<T, U, M>` instead of a `TransitionConfig<T, U, M>` then, so a step without a position
+is a compile error instead of a gap in the progress display. A position is a `string | number`, so an enum of
+positions works just as well as the plain numbers above:
+
+```html
+<p>Step {{ store.currentPosition() }} of {{ store.totalPositions() }}</p>
+```
+
+`positions` lists each position exactly once, in the order the steps are declared in the config. Two steps may
+share a position — handy when a branch offers alternative steps for the same stage: both then report the same
+`currentIndex`, and `totalPositions` stays the number of *distinct* positions. Positions are fixed slots in the
+workflow rather than a count of the steps taken, so a branch that skips a step (as the demo above does for adults)
+also skips its position.
+
+Without `providePositions`, `meta` stays optional and `positions`, `currentPosition`, `currentIndex` and
+`totalPositions` all resolve to `null`. They are on the store either way, so a component reading them doesn't have
+to know how the store was configured.
 
 ## Steps that are `0` or `''`
 
