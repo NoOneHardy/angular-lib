@@ -10,3 +10,10 @@ export interface WorkflowOptions<T extends object> {
    */
   providePositions: boolean
 }
+
+/** Options of a workflow that tracks step positions. */
+export type PositionedWorkflowOptions<T extends object> = Partial<WorkflowOptions<T>> & { providePositions: true }
+
+/** Options of a workflow that doesn't track step positions. */
+export type PlainWorkflowOptions<T extends object> = Partial<WorkflowOptions<T>> & { providePositions?: false }
+
