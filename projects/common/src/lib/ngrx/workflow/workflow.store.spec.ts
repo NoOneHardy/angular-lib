@@ -95,12 +95,19 @@ function configureStore(
   }).inject<WorkflowStore<WizardData, Step>>(workflowStore)
 }
 
-function configurePositionedStore(initialStep: Step = Step.START) {
+function configurePositionedStore(
+  initialStep: Step = Step.START,
+  config: Partial<PositionedTransitionConfig<WizardData, Step, PositionedStepMeta>> = positionedConfig
+) {
   return TestBed.configureTestingModule({
     providers: [
       {
         provide: workflowStore,
-        useClass: workflowStoreFactory<WizardData, Step, PositionedStepMeta>(positionedConfig, initialStep, {providePositions: true})
+        useClass: workflowStoreFactory<WizardData, Step, PositionedStepMeta>(
+          config as PositionedTransitionConfig<WizardData, Step, PositionedStepMeta>,
+          initialStep,
+          {providePositions: true}
+        )
       }
     ]
   }).inject<PositionedWorkflowStore<WizardData, Step, PositionedStepMeta>>(workflowStore)
@@ -199,6 +206,41 @@ describe('workflowStoreFactory', () => {
 
       expect(store.positions()).toEqual([10, 20, 30])
       expect(store.totalPositions()).toBe(3)
+    })
+
+    it('should sort the positions ascending, independent of the config order', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {meta: {title: 'Start', position: 30}, transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {meta: {title: 'Middle', position: 10}, transitions: [{target: Step.END, default: true}]},
+        [Step.END]: {meta: {title: 'End', position: 20}, transitions: [{finish: true, default: true}]}
+      })
+
+      expect(store.positions()).toEqual([10, 20, 30])
+    })
+
+    it('should sort the positions numerically, not lexicographically', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {meta: {title: 'Start', position: 2}, transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {meta: {title: 'Middle', position: 10}, transitions: [{target: Step.END, default: true}]},
+        [Step.END]: {meta: {title: 'End', position: 1}, transitions: [{finish: true, default: true}]}
+      })
+
+      expect(store.positions()).toEqual([1, 2, 10])
+    })
+
+    it('should resolve currentIndex against the sorted positions', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {meta: {title: 'Start', position: 10}, transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {meta: {title: 'Middle', position: 2}, transitions: [{target: Step.END, default: true}]},
+        [Step.END]: {meta: {title: 'End', position: 1}, transitions: [{finish: true, default: true}]}
+      })
+
+      expect(store.currentIndex()).toBe(2)
+
+      store.next()
+
+      expect(store.currentPosition()).toBe(2)
+      expect(store.currentIndex()).toBe(1)
     })
 
     it('should start on the position of the initial step', () => {

@@ -156,10 +156,10 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
     }
   }
 
-  /** Collects the position of every step, keeping the config order and dropping duplicates. */
+  /** Collects the position of every step in ascending order, dropping duplicates. */
   function collectPositions(): Position[] {
     const steps: TransitionConfig<T, S, M>[S][] = Object.values(transitionConfig)
-    return [...new Set(steps.map(step => positionOf(step.meta)).filter(position => position !== null))]
+    return [...new Set(steps.map(step => positionOf(step.meta)).filter(position => position !== null))].sort((a, b) => a - b)
   }
 
   /**

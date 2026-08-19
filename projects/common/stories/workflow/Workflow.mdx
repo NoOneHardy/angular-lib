@@ -264,12 +264,12 @@ they are not part of the store at all:
   <tbody>
   <tr>
     <td><code>positions</code></td>
-    <td><code>(string | number)[]</code> <em>(computed)</em></td>
-    <td>Every position the workflow can reach, in config order and without duplicates.</td>
+    <td><code>number[]</code> <em>(computed)</em></td>
+    <td>Every position the workflow can reach, in ascending order and without duplicates.</td>
   </tr>
   <tr>
     <td><code>currentPosition</code></td>
-    <td><code>string | number | null</code> <em>(computed)</em></td>
+    <td><code>number | null</code> <em>(computed)</em></td>
     <td>Position of the current step.</td>
   </tr>
   <tr>
@@ -390,7 +390,7 @@ import {workflowStoreFactory, workflowStore, PositionedTransitionConfig} from '@
 
 interface OnboardingStepMeta {
   title: string
-  position: number // `string | number`, so enums work as well
+  position: number // numeric enums work as well
 }
 
 const transitions: PositionedTransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
@@ -421,18 +421,21 @@ export class OnboardingComponent {
 
 With the option set, `meta` is mandatory on every step and has to carry a `position` — the factory takes a
 `PositionedTransitionConfig<T, U, M>` instead of a `TransitionConfig<T, U, M>` then, so a step without a position
-is a compile error instead of a gap in the progress display. A position is a `string | number`, so an enum of
-positions works just as well as the plain numbers above:
+is a compile error instead of a gap in the progress display. A position is a `number` — that's what gives the
+workflow an order to sort by — so a numeric enum of positions works just as well as the plain numbers above:
 
 ```html
 <p>Step {{ store.currentPosition() }} of {{ store.totalPositions() }}</p>
 ```
 
-`positions` lists each position exactly once, in the order the steps are declared in the config. Two steps may
-share a position — handy when a branch adds or swaps a step within the same stage, as the demo above does with its
-guardian-consent step: both steps then report the same `currentIndex`, and `totalPositions` stays the number of
-*distinct* positions. Positions are fixed slots in the workflow rather than a count of the steps taken, so a branch
-that skips a position's only step skips that position too.
+`positions` lists each position exactly once, sorted ascending, so the order of the progress display comes from the
+position values themselves rather than from the order the steps happen to be declared in the config. Numbering them
+in steps of ten (`10`, `20`, `30`, ...) leaves room to slot a stage in later without renumbering the rest.
+
+Two steps may share a position — handy when a branch adds or swaps a step within the same stage, as the demo above
+does with its guardian-consent step: both steps then report the same `currentIndex`, and `totalPositions` stays the
+number of *distinct* positions. Positions are fixed slots in the workflow rather than a count of the steps taken, so
+a branch that skips a position's only step skips that position too.
 
 Without `providePositions`, `meta` stays optional and the store carries no position signals at all — reading
 `positions()`, `currentPosition()`, `currentIndex()` or `totalPositions()` on such a store is a compile error, not
