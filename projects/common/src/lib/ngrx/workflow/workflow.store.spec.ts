@@ -63,7 +63,7 @@ const positionedConfig: PositionedTransitionConfig<WizardData, Step, PositionedS
   [Step.MINOR_CONFIRMATION]: {
     meta: {title: 'Minor confirmation', position: 20},
     transitions: [
-      {target: Step.END, default: true},
+      {target: Step.MIDDLE, default: true},
     ]
   },
   [Step.MIDDLE]: {
@@ -275,6 +275,10 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
       expect(store.currentPosition()).toBe(20)
       expect(store.currentIndex()).toBe(1)
+      store.next()
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentPosition()).toBe(20)
+      expect(store.currentIndex()).toBe(1)
     })
 
     it('should restore the position of the previous step on back()', () => {
@@ -451,6 +455,19 @@ describe('workflowStoreFactory', () => {
       store.next()
 
       expect(store.isFinished()).toBe(true)
+    })
+
+    it('should ignore next() once the workflow has finished', () => {
+      const store = configureStore({[Step.START]: {transitions: [{finish: true, default: true}]}})
+
+      store.next()
+      store.next({name: 'Tony Stark'})
+
+      expect(store.isFinished()).toBe(true)
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.path()).toEqual([Step.START])
+      expect(store.data()).toEqual({})
+      expect(store.error()).toBeNull()
     })
 
     it('should treat an empty-string step as a valid, distinct step', () => {
@@ -646,6 +663,38 @@ describe('workflowStoreFactory', () => {
       store.back()
 
       expect(store.error()).toBeNull()
+    })
+
+    it('should reset isFinished when moving back after the workflow finished', () => {
+      const store = configureStore({
+        [Step.START]: {transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {transitions: [{finish: true, default: true}]}
+      })
+
+      store.next()
+      store.next()
+      expect(store.isFinished()).toBe(true)
+
+      store.back()
+
+      expect(store.isFinished()).toBe(false)
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.path()).toEqual([Step.START])
+    })
+
+    it('should allow next() again after going back from a finished workflow', () => {
+      const store = configureStore({
+        [Step.START]: {transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {transitions: [{finish: true, default: true}]}
+      })
+
+      store.next()
+      store.next()
+      store.back()
+      store.next()
+
+      expect(store.isFinished()).toBe(true)
+      expect(store.currentStep()).toBe(Step.MIDDLE)
     })
   })
 

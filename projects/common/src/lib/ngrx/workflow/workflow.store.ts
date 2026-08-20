@@ -78,6 +78,8 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
     withMethods((state) => {
       return {
         next(data?: Partial<T>): void {
+          if (state.isFinished()) return
+
           const currentStep = state.currentStep()
           if (currentStep === undefined || currentStep === null) return this.setError('No current step found')
           if (data) patchState(state, {data: {...state.data(), ...data}})
@@ -102,6 +104,8 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
           })
         },
         back(...keys: (keyof Partial<T>)[]): void {
+          patchState(state, {isFinished: false})
+
           const path = state.path()
           if (path.length === 0) return
           const target = path[path.length - 1]

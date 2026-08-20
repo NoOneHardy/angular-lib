@@ -145,10 +145,10 @@ export class OnboardingComponent {
 }
 ```
 
-`workflowStoreFactory<T, U, M>(transitions: TransitionConfig<T, U, M>, initialStep: U, options?: Partial<WorkflowOptions<T>>)` is generic over:
+`workflowStoreFactory<T, S, M>(transitions: TransitionConfig<T, S, M>, initialStep: S, options?: Partial<WorkflowOptions<T>>)` is generic over:
 - `T` — the shape of the data collected across the whole workflow (each step usually contributes a partial slice of it).
-- `U` — the type used for step identifiers, either `string` (the default) or `number`. It is recommended to declare the
-steps as enum and pass the enum type as `U` to get type safety and autocompletion.
+- `S` — the type used for step identifiers, either `string` (the default) or `number`. It is recommended to declare the
+steps as enum and pass the enum type as `S` to get type safety and autocompletion.
 - `M` — the shape of the optional per-step metadata (see [Step metadata](#step-metadata)), `object` by default.
 
 `options` bundles optional store configuration as `WorkflowOptions<T>`:
@@ -204,7 +204,7 @@ providers: [
   </tr>
   <tr>
     <td><code>currentStep</code></td>
-    <td><code>U</code></td>
+    <td><code>S</code></td>
     <td>The step the workflow is currently on.</td>
   </tr>
   <tr>
@@ -220,7 +220,7 @@ providers: [
   </tr>
   <tr>
     <td><code>path</code></td>
-    <td><code>U[]</code></td>
+    <td><code>S[]</code></td>
     <td>Steps visited on the way to <code>currentStep</code>, most recent last — the back stack <code>back()</code> pops
       from.</td>
   </tr>
@@ -234,7 +234,8 @@ providers: [
   <tr>
     <td><code>isFinished</code></td>
     <td><code>boolean</code></td>
-    <td><code>true</code> once a transition with <code>finish: true</code> has matched.</td>
+    <td><code>true</code> once a transition with <code>finish: true</code> has matched — while <code>true</code>,
+      <code>next()</code> is a no-op. Reset to <code>false</code> by <code>back()</code>.</td>
   </tr>
   <tr>
     <td><code>hasError</code></td>
@@ -289,12 +290,16 @@ they are not part of the store at all:
 
 ### `next(data?: Partial<T>)`
 
-Merges `data` into the store's `data`, then evaluates the transitions configured for
-`currentStep` (see [Transitions](#transitions) below) against the *merged* data:
+Once `isFinished` is `true`, `next()` is a no-op — nothing in the state changes, including `data`, until
+`back()` reopens the workflow (see below). Otherwise it merges `data`
+into the store's `data`, then evaluates the transitions configured for `currentStep` (see
+[Transitions](#transitions) below) against the *merged* data:
 
 - If a transition matches and has a `target`, the store moves to it, pushes the previous
 `currentStep` onto `path`, sets `direction` to `'forward'`, and clears `error`.
-- If a transition matches and has `finish: true`, `isFinished` is set to `true` and `error` is cleared. `currentStep` and `path` are left untouched.
+- If a transition matches and has `finish: true`, `isFinished` is set to `true`, the previous `currentStep` is
+pushed onto `path`, `direction` is set to `'forward'`, and `error` is cleared. `currentStep` itself is left
+untouched, so it keeps reporting the last active step once the workflow finishes.
 - If no transition matches, `error` is set to `'No transition found'` and nothing else changes.
 
 `error` and `hasError` exist for *workflow*-level failures — a step was misconfigured, or
@@ -306,13 +311,19 @@ rejecting invalid input. The demo above validates each step locally for exactly 
 
 ### `back(...keys: (keyof Partial<T>)[])`
 
-Pops the last step off `path` and moves `currentStep` back to it, setting `direction` to
-`'backward'` and clearing `error`. Any `keys` passed are reset to `undefined` on `data` — use this
-to drop values that belonged only to the step being left, so they don't leak into a different
-branch if the user takes a different path forward next time.
+Resets `isFinished` to `false`, then pops the last step off `path` and moves `currentStep` back to it,
+setting `direction` to `'backward'` and clearing `error`. Any `keys` passed are reset to `undefined` on
+`data` — use this to drop values that belonged only to the step being left, so they don't leak into a
+different branch if the user takes a different path forward next time.
+
+Since a transition with `finish: true` pushes onto `path` just like one with a `target` (see
+[`next()`](#nextdata-partialt) above), calling `back()` on a finished workflow reopens it: `isFinished`
+goes back to `false` and `currentStep` moves to the step that finished it, so `next()` can be called
+on it again.
 
 If `path` is empty (no forward transition has happened yet, or `back()` has already unwound the
-whole path), the workflow fails silently so no error is thrown.
+whole path), `isFinished` is still reset, but nothing else changes — the workflow fails silently so no
+error is thrown.
 
 ### `setError(error: string)`
 
@@ -439,8 +450,8 @@ a branch that skips a position's only step skips that position too.
 
 Without `providePositions`, `meta` stays optional and the store carries no position signals at all — reading
 `positions()`, `currentPosition()`, `currentIndex()` or `totalPositions()` on such a store is a compile error, not
-a `null`. The two kinds of store therefore have two types: `WorkflowStore<T, U, M>` without positions and
-`PositionedWorkflowStore<T, U, M>` with them. The `workflowStore` token is typed as the former, so a component of a
+a `null`. The two kinds of store therefore have two types: `WorkflowStore<T, S, M>` without positions and
+`PositionedWorkflowStore<T, S, M>` with them. The `workflowStore` token is typed as the former, so a component of a
 positioned workflow asks for the latter explicitly:
 
 ```ts
@@ -450,7 +461,7 @@ private workflow = inject<PositionedWorkflowStore<OnboardingData, OnboardingStep
 
 ## Steps that are `0` or `''`
 
-`U` is typed as `string | number`, and both an empty string and the number `0` are valid step
+`S` is typed as `string | number`, and both an empty string and the number `0` are valid step
 identifiers — the store checks `currentStep` for `undefined`/`null` rather than falsiness, so a
 numeric workflow that starts at step `0` behaves the same as one starting at step `1`.
 
