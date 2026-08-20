@@ -2,22 +2,22 @@ import {Transition} from './transition'
 import {Position} from './position'
 
 /** Configuration of a single step: the transitions leading away from it and optional data about the step itself. */
-interface TransitionConfigWithMeta<T extends object, U extends string | number, M extends object> {
-  transitions: Transition<T, U>[]
+interface TransitionConfigWithMeta<T extends object, S extends string | number, M extends object> {
+  transitions: Transition<T, S>[]
   meta?: M
 }
 
 /** Same as {@link TransitionConfigWithMeta}, but with a mandatory `meta` that carries the step's position. */
-interface TransitionConfigWithPosition<T extends object, U extends string | number, M extends object> {
-  transitions: Transition<T, U>[]
+interface TransitionConfigWithPosition<T extends object, S extends string | number, M extends object> {
+  transitions: Transition<T, S>[]
   meta: M & {position: Position}
 }
 
 export type TransitionConfig<
   T extends object,
-  U extends string | number = string,
+  S extends string | number = string,
   M extends object = object
-> = Record<U, TransitionConfigWithMeta<T, U, M>>
+> = Record<S, TransitionConfigWithMeta<T, S, M>>
 
 /**
  * A {@link TransitionConfig} in which every step declares a `meta.position`.
@@ -27,6 +27,6 @@ export type TransitionConfig<
  */
 export type PositionedTransitionConfig<
   T extends object,
-  U extends string | number = string,
+  S extends string | number = string,
   M extends object = object
-> = Record<U, TransitionConfigWithPosition<T, U, M>>
+> = Record<S, TransitionConfigWithPosition<T, S, M>>

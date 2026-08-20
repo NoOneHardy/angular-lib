@@ -18,4 +18,4 @@ interface DefaultTransition {
 }
 type TransitionCondition<T extends object> = GuardedTransition<T> | DefaultTransition
 
-export type Transition<T extends object, U extends string | number> = TransitionTarget<U> & TransitionCondition<T>
+export type Transition<T extends object, S extends string | number> = TransitionTarget<S> & TransitionCondition<T>

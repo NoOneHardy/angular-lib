@@ -333,8 +333,8 @@ validation needs to report a failure that isn't naturally expressed as "no trans
 
 ## Transitions
 
-Each step in a `TransitionConfig<T, U, M>` maps to a `{transitions, meta?}` entry. `transitions` is
-an ordered array of `Transition<T, U>` — `next()` picks the **first** one that applies:
+Each step in a `TransitionConfig<T, S, M>` maps to a `{transitions, meta?}` entry. `transitions` is
+an ordered array of `Transition<T, S>` — `next()` picks the **first** one that applies:
 
 1. The first transition in the array whose `canActivate(data)` returns `true`.
 2. Otherwise, the first transition in the array marked `default: true`.
@@ -356,7 +356,7 @@ and `default`.
 
 ## Step metadata
 
-A `TransitionConfig<T, U, M>` entry can carry an optional `meta: M` alongside its `transitions` —
+A `TransitionConfig<T, S, M>` entry can carry an optional `meta: M` alongside its `transitions` —
 data about the step itself (a title, an icon, progress-bar info, ...) that a container component
 can read without needing a `switch` over `currentStep`:
 
@@ -431,7 +431,7 @@ export class OnboardingComponent {
 ```
 
 With the option set, `meta` is mandatory on every step and has to carry a `position` — the factory takes a
-`PositionedTransitionConfig<T, U, M>` instead of a `TransitionConfig<T, U, M>` then, so a step without a position
+`PositionedTransitionConfig<T, S, M>` instead of a `TransitionConfig<T, S, M>` then, so a step without a position
 is a compile error instead of a gap in the progress display. A position is a `number` — that's what gives the
 workflow an order to sort by — so a numeric enum of positions works just as well as the plain numbers above:
 
