@@ -22,7 +22,7 @@ import {MatButton} from '@angular/material/button'
   styleUrl: '../../workflow-demo.shared.scss'
 })
 export class WorkflowDemoProfileComponent implements OnInit {
-  private workflow: DemoOnboardingWorkflowStore = inject(workflowStore)
+  private workflow = inject<DemoOnboardingWorkflowStore>(workflowStore)
 
   form = new FormGroup({
     age: new FormControl<number>(0, {nonNullable: true}),
@@ -37,7 +37,7 @@ export class WorkflowDemoProfileComponent implements OnInit {
   }
 
   back(): void {
-    this.workflow.back('age')
+    this.workflow.back()
   }
 
   ngOnInit(): void {

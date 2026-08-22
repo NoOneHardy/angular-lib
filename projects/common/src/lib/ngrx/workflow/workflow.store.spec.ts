@@ -1,6 +1,6 @@
 import {TestBed} from '@angular/core/testing'
-import {WorkflowStore, workflowStore, workflowStoreFactory} from './workflow.store'
-import {TRANSITION_CONFIG, TransitionConfig} from './model/transition-config'
+import {PositionedWorkflowStore, WorkflowStore, workflowStore, workflowStoreFactory} from './workflow.store'
+import {PositionedTransitionConfig, TransitionConfig} from './model/transition-config'
 
 interface WizardData {
   name?: string
@@ -15,25 +15,70 @@ enum Step {
   END = 'END'
 }
 
-const defaultConfig: TransitionConfig<WizardData, Step> = {
-  [Step.START]: [
-    {target: Step.MIDDLE, default: true},
-    {target: Step.MINOR_CONFIRMATION, canActivate: (data) => data.age && data.age < 18 || false},
-  ],
-  [Step.MINOR_CONFIRMATION]: [
-    {finish: true, default: true},
-    {target: Step.MIDDLE, canActivate: (data) => !!data.isMinorAgreementConfirmed},
-  ],
-  [Step.MIDDLE]: [
-    {target: Step.END, default: true},
-  ],
-  [Step.END]: [
-    {finish: true, default: true}
-  ]
+interface StepMeta {
+  title: string
+  subtitle?: string
+}
+
+const defaultConfig: TransitionConfig<WizardData, Step, StepMeta> = {
+  [Step.START]: {
+    meta: {title: 'Start'},
+    transitions: [
+      {target: Step.MIDDLE, default: true},
+      {target: Step.MINOR_CONFIRMATION, canActivate: (data) => !!data.age && data.age < 18},
+    ]
+  },
+  [Step.MINOR_CONFIRMATION]: {
+    meta: {title: 'Minor confirmation'},
+    transitions: [
+      {finish: true, default: true},
+      {target: Step.MIDDLE, canActivate: (data) => data.isMinorAgreementConfirmed},
+    ]
+  },
+  [Step.MIDDLE]: {
+    transitions: [
+      {target: Step.END, default: true},
+    ]
+  },
+  [Step.END]: {
+    meta: {title: 'End'},
+    transitions: [
+      {finish: true, default: true}
+    ]
+  }
+}
+
+// MINOR_CONFIRMATION and MIDDLE are two branches of the same stage, so they share a position
+const positionedConfig: PositionedTransitionConfig<WizardData, Step, StepMeta> = {
+  [Step.START]: {
+    meta: {title: 'Start', position: {order: 10, label: 'Start'}},
+    transitions: [
+      {target: Step.MIDDLE, default: true},
+      {target: Step.MINOR_CONFIRMATION, canActivate: (data) => !!data.age && data.age < 18},
+    ]
+  },
+  [Step.MINOR_CONFIRMATION]: {
+    meta: {title: 'Minor confirmation', position: {order: 20, label: 'Middle'}},
+    transitions: [
+      {target: Step.MIDDLE, default: true},
+    ]
+  },
+  [Step.MIDDLE]: {
+    meta: {title: 'Middle', position: {order: 20, label: 'Middle'}},
+    transitions: [
+      {target: Step.END, default: true},
+    ]
+  },
+  [Step.END]: {
+    meta: {title: 'End', position: {order: 30, label: 'End'}},
+    transitions: [
+      {finish: true, default: true}
+    ]
+  }
 }
 
 function configureStore(
-  config: Partial<TransitionConfig<WizardData, Step>> = defaultConfig,
+  config: Partial<TransitionConfig<WizardData, Step, StepMeta>> = defaultConfig,
   initialStep: Step = Step.START,
   initialData: Partial<WizardData> = {}
 ) {
@@ -41,11 +86,28 @@ function configureStore(
     providers: [
       {
         provide: workflowStore,
-        useClass: workflowStoreFactory<WizardData, Step>(initialStep, initialData)
-      },
-      {provide: TRANSITION_CONFIG, useValue: config}
+        useClass: workflowStoreFactory<WizardData, Step, StepMeta>(config as TransitionConfig<WizardData, Step, StepMeta>, initialStep, {initialData})
+      }
     ]
   }).inject<WorkflowStore<WizardData, Step>>(workflowStore)
+}
+
+function configurePositionedStore(
+  initialStep: Step = Step.START,
+  config: Partial<PositionedTransitionConfig<WizardData, Step, StepMeta>> = positionedConfig
+) {
+  return TestBed.configureTestingModule({
+    providers: [
+      {
+        provide: workflowStore,
+        useClass: workflowStoreFactory<WizardData, Step, StepMeta>(
+          config as PositionedTransitionConfig<WizardData, Step, StepMeta>,
+          initialStep,
+          {providePositions: true}
+        )
+      }
+    ]
+  }).inject<PositionedWorkflowStore<WizardData, Step, StepMeta>>(workflowStore)
 }
 
 describe('workflowStoreFactory', () => {
@@ -68,6 +130,372 @@ describe('workflowStoreFactory', () => {
 
     expect(store.currentStep()).toBe(Step.START)
     expect(store.data()).toEqual({name: 'Michael Scott'})
+  })
+
+  describe('currentMeta', () => {
+    it('should start with the meta of the initial step', () => {
+      const store = configureStore()
+
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
+
+    it('should be null when the initial step has no meta', () => {
+      const store = configureStore(defaultConfig, Step.MIDDLE)
+
+      expect(store.currentMeta()).toBeNull()
+    })
+
+    it('should update to the meta of the target step on a forward transition', () => {
+      const store = configureStore()
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toBeNull()
+    })
+
+    it('should pick up meta on a forward transition into a step that has one', () => {
+      const store = configureStore()
+
+      store.next({age: 12})
+
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+      expect(store.currentMeta()).toEqual({title: 'Minor confirmation'})
+    })
+
+    it('should keep meta of last active step when the workflow finishes', () => {
+      const store = configureStore({
+        [Step.START]: {meta: {title: 'Start'}, transitions: [{finish: true, default: true}]}
+      })
+
+      store.next()
+
+      expect(store.isFinished()).toBe(true)
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
+
+    it('should restore the meta of the previous step on back()', () => {
+      const store = configureStore()
+
+      store.next()
+      store.back()
+
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
+
+    it('should not change on a transition that errors', () => {
+      const store = configureStore({
+        [Step.START]: {meta: {title: 'Start'}, transitions: [{target: Step.MIDDLE, canActivate: () => false}]}
+      })
+
+      store.next()
+
+      expect(store.error()).toBe('No transition found')
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+    })
+
+    it('should let a transition override fields of the target step meta', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toEqual({title: 'Overridden'})
+    })
+
+    it('should merge the transition meta on top of the target step meta, keeping fields it does not override', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', subtitle: 'Middle subtitle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentMeta()).toEqual({title: 'Overridden', subtitle: 'Middle subtitle'})
+    })
+
+    it('should ignore the transition meta override when the target step has no meta at all', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toBeNull()
+    })
+
+    it('should not apply a meta override from a transition that was not taken', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [
+            {target: Step.END, canActivate: () => false, meta: {title: 'Should not apply'}},
+            {target: Step.MIDDLE, default: true}
+          ]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toEqual({title: 'Middle'})
+    })
+
+    it('should carry the overridden meta into path when transitioning away again', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+      store.next()
+
+      expect(store.path()).toEqual([
+        {step: Step.START, data: {}, meta: null},
+        {step: Step.MIDDLE, data: {}, meta: {title: 'Overridden'}}
+      ])
+    })
+
+    it('should restore the overridden meta on back() after transitioning away again', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+      store.next()
+      store.back()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toEqual({title: 'Overridden'})
+    })
+  })
+
+  describe('positions', () => {
+    it('should expose every position of the config, without duplicates', () => {
+      const store = configurePositionedStore()
+
+      expect(store.positions()).toEqual([
+        {order: 10, label: 'Start'},
+        {order: 20, label: 'Middle'},
+        {order: 30, label: 'End'}
+      ])
+      expect(store.totalPositions()).toBe(3)
+    })
+
+    it('should sort the positions ascending, independent of the config order', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {
+          meta: {title: 'Start', position: {order: 30, label: 'Start'}},
+          transitions: [{target: Step.MIDDLE, default: true}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', position: {order: 10, label: 'Middle'}},
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          meta: {title: 'End', position: {order: 20, label: 'End'}},
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      expect(store.positions()).toEqual([
+        {order: 10, label: 'Middle'},
+        {order: 20, label: 'End'},
+        {order: 30, label: 'Start'}
+      ])
+    })
+
+    it('should sort the positions numerically', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {
+          meta: {title: 'Start', position: {order: 2, label: 'Start'}},
+          transitions: [{target: Step.MIDDLE, default: true}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', position: {order: 10, label: 'Middle'}},
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          meta: {title: 'End', position: {order: 1, label: 'End'}},
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      expect(store.positions()).toEqual([
+        {order: 1, label: 'End'},
+        {order: 2, label: 'Start'},
+        {order: 10, label: 'Middle'}
+      ])
+    })
+
+    it('should resolve currentIndex against the sorted positions', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {
+          meta: {title: 'Start', position: {order: 10, label: 'Start'}},
+          transitions: [{target: Step.MIDDLE, default: true}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', position: {order: 20, label: 'Middle'}},
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          meta: {title: 'End', position: {order: 30, label: 'End'}},
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      expect(store.currentIndex()).toBe(0)
+
+      store.next()
+
+      expect(store.currentPosition()).toEqual({order: 20, label: 'Middle'})
+      expect(store.currentIndex()).toBe(1)
+    })
+
+    it('should start on the position of the initial step', () => {
+      const store = configurePositionedStore()
+
+      expect(store.currentPosition()).toEqual({order: 10, label: 'Start'})
+      expect(store.currentIndex()).toBe(0)
+    })
+
+    it('should start on the position of a later initial step', () => {
+      const store = configurePositionedStore(Step.END)
+
+      expect(store.currentPosition()).toEqual({order: 30, label: 'End'})
+      expect(store.currentIndex()).toBe(2)
+    })
+
+    it('should move to the position of the target step on a forward transition', () => {
+      const store = configurePositionedStore()
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentPosition()).toEqual({order: 20, label: 'Middle'})
+      expect(store.currentIndex()).toBe(1)
+    })
+
+    it('should resolve steps that share a position to the same index', () => {
+      const store = configurePositionedStore()
+
+      store.next({age: 12})
+
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+      expect(store.currentPosition()).toEqual({order: 20, label: 'Middle'})
+      expect(store.currentIndex()).toBe(1)
+      store.next()
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentPosition()).toEqual({order: 20, label: 'Middle'})
+      expect(store.currentIndex()).toBe(1)
+    })
+
+    it('should restore the position of the previous step on back()', () => {
+      const store = configurePositionedStore()
+
+      store.next()
+      store.back()
+
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentPosition()).toEqual({order: 10, label: 'Start'})
+      expect(store.currentIndex()).toBe(0)
+    })
+
+    it('should keep the position of the last active step when the workflow finishes', () => {
+      const store = configurePositionedStore(Step.END)
+
+      store.next()
+
+      expect(store.isFinished()).toBe(true)
+      expect(store.currentPosition()).toEqual({order: 30, label: 'End'})
+      expect(store.currentIndex()).toBe(2)
+    })
+
+    it('should not carry any position signal when providePositions is omitted', () => {
+      const store = configureStore()
+
+      expect('positions' in store).toBe(false)
+      expect('currentPosition' in store).toBe(false)
+      expect('currentIndex' in store).toBe(false)
+      expect('totalPositions' in store).toBe(false)
+    })
+
+    it('should let a transition override the target step position', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {
+          meta: {title: 'Start', position: {order: 10, label: 'Start'}},
+          transitions: [{
+            target: Step.MIDDLE,
+            default: true,
+            meta: {position: {order: 25, label: 'Overridden'}}
+          }]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', position: {order: 20, label: 'Middle'}},
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          meta: {title: 'End', position: {order: 30, label: 'End'}},
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentPosition()).toEqual({order: 25, label: 'Overridden'})
+    })
+
+    it('should not carry any position signal when providePositions is false, even with positions configured', () => {
+      const store = TestBed.configureTestingModule({
+        providers: [
+          {
+            provide: workflowStore,
+            useClass: workflowStoreFactory<WizardData, Step, StepMeta>(positionedConfig, Step.START, {providePositions: false})
+          }
+        ]
+      }).inject<WorkflowStore<WizardData, Step, StepMeta>>(workflowStore)
+
+      expect('positions' in store).toBe(false)
+      expect('currentPosition' in store).toBe(false)
+      expect('currentIndex' in store).toBe(false)
+      expect('totalPositions' in store).toBe(false)
+    })
   })
 
   describe('next', () => {
@@ -128,10 +556,12 @@ describe('workflowStoreFactory', () => {
 
     it('should pick the first matching guarded transition when multiple match', () => {
       const store = configureStore({
-        [Step.START]: [
-          {target: Step.MIDDLE, canActivate: () => true},
-          {target: Step.END, canActivate: () => true}
-        ]
+        [Step.START]: {
+          transitions: [
+            {target: Step.MIDDLE, canActivate: () => true},
+            {target: Step.END, canActivate: () => true}
+          ]
+        }
       })
 
       store.next()
@@ -141,7 +571,7 @@ describe('workflowStoreFactory', () => {
 
     it('should set an error when no guard matches and there is no default', () => {
       const store = configureStore({
-        [Step.START]: [{target: Step.MIDDLE, canActivate: () => false}]
+        [Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: () => false}]}
       })
 
       store.next()
@@ -152,7 +582,7 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should set an error when the transitions list for the current step is empty', () => {
-      const store = configureStore({[Step.START]: []})
+      const store = configureStore({[Step.START]: {transitions: []}})
 
       store.next()
 
@@ -160,8 +590,8 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.START)
     })
 
-    it('should set an error when transitions don\'t include the current step', () => {
-      const store = configureStore({[Step.START]: []}, Step.MIDDLE)
+    it('should set an error when the config for the current step has no transitions', () => {
+      const store = configureStore({[Step.MIDDLE]: {}} as Partial<TransitionConfig<WizardData, Step, StepMeta>>, Step.MIDDLE)
 
       store.next()
 
@@ -169,8 +599,17 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.MIDDLE)
     })
 
+    it('should set an error when transitions don\'t include the current step', () => {
+      const store = configureStore({[Step.START]: {transitions: []}}, Step.MIDDLE)
+
+      store.next()
+
+      expect(store.error()).toBe('No transition config found for current step')
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+    })
+
     it('should mark the workflow finished when the matching transition has no step', () => {
-      const store = configureStore({[Step.START]: [{finish: true, default: true}]})
+      const store = configureStore({[Step.START]: {transitions: [{finish: true, default: true}]}})
 
       store.next()
 
@@ -180,7 +619,7 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should not reset isFinished on a later successful transition', () => {
-      const store = configureStore({[Step.START]: [{finish: true, default: true}]})
+      const store = configureStore({[Step.START]: {transitions: [{finish: true, default: true}]}})
 
       store.next()
       store.next()
@@ -188,9 +627,29 @@ describe('workflowStoreFactory', () => {
       expect(store.isFinished()).toBe(true)
     })
 
+    it('should ignore next() once the workflow has finished', () => {
+      const store = configureStore({[Step.START]: {transitions: [{finish: true, default: true}]}})
+
+      store.next()
+      store.next({name: 'Tony Stark'})
+
+      expect(store.isFinished()).toBe(true)
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: null}])
+      expect(store.data()).toEqual({})
+      expect(store.error()).toBeNull()
+    })
+
     it('should treat an empty-string step as a valid, distinct step', () => {
       const store = configureStore(
-        {'': [{target: Step.MIDDLE, default: true}]} as unknown as Partial<TransitionConfig<WizardData, Step>>,
+        {
+          '': {
+            transitions: [{
+              target: Step.MIDDLE,
+              default: true
+            }]
+          }
+        } as unknown as Partial<TransitionConfig<WizardData, Step, StepMeta>>,
         '' as Step
       )
 
@@ -202,15 +661,18 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should treat a numeric step of 0 as a valid current step', () => {
-      const NumericStore = workflowStoreFactory<WizardData, number>(0)
       TestBed.resetTestingModule()
       TestBed.configureTestingModule({
         providers: [
-          NumericStore,
-          {provide: TRANSITION_CONFIG, useValue: {0: [{target: 1, default: true}]}}
+          {
+            provide: workflowStore,
+            useClass: workflowStoreFactory<WizardData, number>({
+              0: {transitions: [{target: 1, default: true}]}
+            }, 0)
+          }
         ]
       })
-      const store = TestBed.inject(NumericStore)
+      const store = TestBed.inject(workflowStore)
 
       store.next()
 
@@ -221,8 +683,12 @@ describe('workflowStoreFactory', () => {
     it('should treat a numeric target step of 0 as a valid destination', () => {
       TestBed.configureTestingModule({
         providers: [
-          {provide: workflowStore, useClass: workflowStoreFactory<WizardData, number>(1)},
-          {provide: TRANSITION_CONFIG, useValue: {1: [{target: 0, default: true}]}}
+          {
+            provide: workflowStore,
+            useClass: workflowStoreFactory<WizardData, number>({
+              1: {transitions: [{target: 0, default: true}]}
+            }, 1)
+          },
         ]
       })
       const store = TestBed.inject(workflowStore)
@@ -234,15 +700,15 @@ describe('workflowStoreFactory', () => {
     })
 
     it('should set an error instead of throwing when the transition config has no entry for the current step', () => {
-      const store = configureStore({} as TransitionConfig<WizardData, Step>)
+      const store = configureStore({} as TransitionConfig<WizardData, Step, StepMeta>)
 
       expect(() => store.next()).not.toThrow()
-      expect(store.error()).toBe('No transition found')
+      expect(store.error()).toBe('No transition config found for current step')
     })
 
     it('should clear a previously set error on a later successful transition', () => {
       const store = configureStore({
-        [Step.START]: [{target: Step.MIDDLE, canActivate: (data: WizardData) => !!data.name}]
+        [Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: (data: WizardData) => data.name}]}
       })
 
       store.next()
@@ -257,7 +723,7 @@ describe('workflowStoreFactory', () => {
 
     it('should clear a previously set error when the workflow finishes', () => {
       const store = configureStore({
-        [Step.START]: [{finish: true, canActivate: (data: WizardData) => !!data.name}]
+        [Step.START]: {transitions: [{finish: true, canActivate: (data: WizardData) => data.name}]}
       })
 
       store.next()
@@ -269,26 +735,26 @@ describe('workflowStoreFactory', () => {
       expect(store.error()).toBeNull()
     })
 
-    it('should push the current step onto path on every forward transition', () => {
+    it('should push the current state onto path on every forward transition', () => {
       const store = configureStore()
 
-      store.next()
-      expect(store.path()).toEqual([Step.START])
+      store.next({age: 25})
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}])
 
-      store.next()
-      expect(store.path()).toEqual([Step.START, Step.MIDDLE])
+      store.next({name: 'Tony Stark'})
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}, {step: Step.MIDDLE, data: {age: 25}, meta: null}])
     })
 
     it('should push onto path when a transition finishes the workflow', () => {
-      const store = configureStore({[Step.START]: [{finish: true, default: true}]})
+      const store = configureStore({[Step.START]: {transitions: [{finish: true, default: true}]}})
 
       store.next()
 
-      expect(store.path()).toEqual([Step.START])
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: null}])
     })
 
     it('should not push onto path when the transition errors', () => {
-      const store = configureStore({[Step.START]: [{target: Step.MIDDLE, canActivate: () => false}]})
+      const store = configureStore({[Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: () => false}]}})
 
       store.next()
 
@@ -300,7 +766,7 @@ describe('workflowStoreFactory', () => {
     it('should fail silently when called before any forward transition', () => {
       const store = configureStore()
 
-      store.back('name')
+      store.back()
 
       expect(store.error()).toBeNull()
       expect(store.hasError()).toBe(false)
@@ -316,7 +782,7 @@ describe('workflowStoreFactory', () => {
 
       expect(store.currentStep()).toBe(Step.MIDDLE)
       expect(store.direction()).toBe('backward')
-      expect(store.path()).toEqual([Step.START])
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}])
       expect(store.error()).toBeNull()
     })
 
@@ -343,28 +809,30 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.START)
     })
 
-    it('should reset the given keys to undefined on the merged data', () => {
+    it('should reset data to previous state', () => {
       const store = configureStore()
 
-      store.next({name: 'Tony Stark', age: 30})
-      store.back('age')
-
-      expect(store.data()).toEqual({name: 'Tony Stark', age: undefined})
-    })
-
-    it('should leave data untouched when called without keys', () => {
-      const store = configureStore()
-
+      expect(store.data()).toEqual({})
       store.next({name: 'Tony Stark'})
       store.back()
 
-      expect(store.data()).toEqual({name: 'Tony Stark'})
+      expect(store.data()).toEqual({})
+    })
+
+    it('should reset meta to previous state', () => {
+      const store = configureStore()
+
+      store.next({age: 12})
+      expect(store.currentMeta()).toEqual({title: 'Minor confirmation'})
+      store.back()
+
+      expect(store.currentMeta()).toEqual({title: 'Start'})
     })
 
     it('should clear a previously set error on a successful step back', () => {
       const store = configureStore({
-        [Step.START]: [{target: Step.MIDDLE, default: true}],
-        [Step.MIDDLE]: [{target: Step.END, canActivate: () => false}]
+        [Step.START]: {transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {transitions: [{target: Step.END, canActivate: () => false}]}
       })
 
       store.next()
@@ -374,6 +842,38 @@ describe('workflowStoreFactory', () => {
       store.back()
 
       expect(store.error()).toBeNull()
+    })
+
+    it('should reset isFinished when moving back after the workflow finished', () => {
+      const store = configureStore({
+        [Step.START]: {transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {transitions: [{finish: true, default: true}]}
+      })
+
+      store.next()
+      store.next()
+      expect(store.isFinished()).toBe(true)
+
+      store.back()
+
+      expect(store.isFinished()).toBe(false)
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: null}])
+    })
+
+    it('should allow next() again after going back from a finished workflow', () => {
+      const store = configureStore({
+        [Step.START]: {transitions: [{target: Step.MIDDLE, default: true}]},
+        [Step.MIDDLE]: {transitions: [{finish: true, default: true}]}
+      })
+
+      store.next()
+      store.next()
+      store.back()
+      store.next()
+
+      expect(store.isFinished()).toBe(true)
+      expect(store.currentStep()).toBe(Step.MIDDLE)
     })
   })
 
@@ -431,6 +931,142 @@ describe('workflowStoreFactory', () => {
       store.back()
       store.back()
       expect(store.canGoBack()).toBe(false)
+    })
+  })
+
+  describe('skip', () => {
+    const defaultSkipConfig: TransitionConfig<WizardData, Step, StepMeta> = {
+      [Step.START]: {
+        transitions: [
+          {target: Step.MIDDLE, default: true}
+        ],
+        skippable: true
+      },
+      [Step.MIDDLE]: {
+        transitions: [
+          {target: Step.MINOR_CONFIRMATION, canActivate: (data) => !!data.age && data.age < 18},
+          {target: Step.END, default: true}
+        ],
+        skippable: true
+      },
+      [Step.MINOR_CONFIRMATION]: {
+        transitions: [
+          {target: Step.END, default: true}
+        ],
+        skippable: true
+      },
+      [Step.END]: {
+        transitions: [
+          {finish: true, default: true}
+        ]
+      }
+    }
+    let store: WorkflowStore<WizardData, Step>
+
+    beforeEach(() => {
+      store = configureStore(defaultSkipConfig)
+    })
+
+    it('should move to the next step that is not skippable', () => {
+      store.skip()
+      expect(store.currentStep()).toBe(Step.END)
+    })
+
+    it('should follow the flow including guarded transitions while skipping', () => {
+      TestBed.resetTestingModule()
+      store = configureStore(defaultSkipConfig, Step.START, {age: 12})
+      store.skip()
+      expect(store.currentStep()).toBe(Step.END)
+      console.log(store.path())
+      expect(store.path().findIndex(s => s.step === Step.MINOR_CONFIRMATION)).not.toBe(-1)
+    })
+
+    it('should mark the workflow finished when skipping to a step that has no further transitions and is skippable', () => {
+      TestBed.resetTestingModule()
+      store = configureStore({
+        ...defaultSkipConfig,
+        [Step.END]: {
+          transitions: [{finish: true, default: true}],
+          skippable: true
+        }
+      })
+      store.skip()
+      expect(store.isFinished()).toBe(true)
+    })
+
+    it('should not mark the workflow finished when skipping to a step that has no further transitions and is not skippable', () => {
+      store.skip()
+      expect(store.currentStep()).toBe(Step.END)
+      expect(store.isFinished()).toBe(false)
+    })
+
+    it('should not skip when the current step is not skippable', () => {
+      TestBed.resetTestingModule()
+      store = configureStore({
+        [Step.START]: {
+          transitions: [
+            {target: Step.MIDDLE, default: true}
+          ],
+          skippable: true
+        },
+        [Step.MIDDLE]: {
+          transitions: [
+            {target: Step.MINOR_CONFIRMATION, canActivate: (data) => !!data.age && data.age < 18},
+            {target: Step.END, default: true}
+          ],
+          skippable: true
+        },
+        [Step.MINOR_CONFIRMATION]: {
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          transitions: [
+            {finish: true, default: true}
+          ]
+        }
+      })
+
+      store.next()
+      store.next({age: 12})
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+      store.skip()
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+    })
+
+    it('should allow skipping after moving from a skippable step to another skippable step', () => {
+      store.next()
+      store.skip()
+      expect(store.currentStep()).toBe(Step.END)
+    })
+
+    it('should not skip when the last step was skippable and next() is called on another skippable step', () => {
+      store.next()
+      store.next({age: 32})
+      expect(store.currentStep()).toBe(Step.END)
+    })
+
+    it('should not skip when the last step was skippable and next() is called on a non-skippable step', () => {
+      TestBed.resetTestingModule()
+      store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true}],
+          skippable: true
+        },
+        [Step.MIDDLE]: {
+          transitions: [{target: Step.MINOR_CONFIRMATION, default: true}]
+        },
+        [Step.MINOR_CONFIRMATION]: {
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      store.next()
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      store.next()
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
     })
   })
 })

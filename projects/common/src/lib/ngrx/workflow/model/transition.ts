@@ -9,7 +9,8 @@ interface FinishTarget {
 type TransitionTarget<T extends string | number> = StepTarget<T> | FinishTarget
 
 interface GuardedTransition<T extends object> {
-  canActivate: (data: Partial<T>) => boolean
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  canActivate: (data: Partial<T>) => any
   default?: never
 }
 interface DefaultTransition {
@@ -18,4 +19,6 @@ interface DefaultTransition {
 }
 type TransitionCondition<T extends object> = GuardedTransition<T> | DefaultTransition
 
-export type Transition<T extends object, U extends string | number> = TransitionTarget<U> & TransitionCondition<T>
+export type Transition<T extends object, S extends string | number, M extends object> = TransitionTarget<S> & TransitionCondition<T> & {
+  meta?: Partial<M>
+}
