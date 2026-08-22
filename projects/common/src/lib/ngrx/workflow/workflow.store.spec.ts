@@ -796,4 +796,140 @@ describe('workflowStoreFactory', () => {
       expect(store.canGoBack()).toBe(false)
     })
   })
+
+  describe('skip', () => {
+    const defaultSkipConfig: TransitionConfig<WizardData, Step, StepMeta> = {
+      [Step.START]: {
+        transitions: [
+          {target: Step.MIDDLE, default: true}
+        ],
+        skippable: true
+      },
+      [Step.MIDDLE]: {
+        transitions: [
+          {target: Step.MINOR_CONFIRMATION, canActivate: (data) => !!data.age && data.age < 18},
+          {target: Step.END, default: true}
+        ],
+        skippable: true
+      },
+      [Step.MINOR_CONFIRMATION]: {
+        transitions: [
+          {target: Step.END, default: true}
+        ],
+        skippable: true
+      },
+      [Step.END]: {
+        transitions: [
+          {finish: true, default: true}
+        ]
+      }
+    }
+    let store: WorkflowStore<WizardData, Step>
+
+    beforeEach(() => {
+      store = configureStore(defaultSkipConfig)
+    })
+
+    it('should move to the next step that is not skippable', () => {
+      store.skip()
+      expect(store.currentStep()).toBe(Step.END)
+    })
+
+    it('should follow the flow including guarded transitions while skipping', () => {
+      TestBed.resetTestingModule()
+      store = configureStore(defaultSkipConfig, Step.START, {age: 12})
+      store.skip()
+      expect(store.currentStep()).toBe(Step.END)
+      console.log(store.path())
+      expect(store.path().findIndex(s => s === Step.MINOR_CONFIRMATION)).not.toBe(-1)
+    })
+
+    it('should mark the workflow finished when skipping to a step that has no further transitions and is skippable', () => {
+      TestBed.resetTestingModule()
+      store = configureStore({
+        ...defaultSkipConfig,
+        [Step.END]: {
+          transitions: [{finish: true, default: true}],
+          skippable: true
+        }
+      })
+      store.skip()
+      expect(store.isFinished()).toBe(true)
+    })
+
+    it('should not mark the workflow finished when skipping to a step that has no further transitions and is not skippable', () => {
+      store.skip()
+      expect(store.currentStep()).toBe(Step.END)
+      expect(store.isFinished()).toBe(false)
+    })
+
+    it('should not skip when the current step is not skippable', () => {
+      TestBed.resetTestingModule()
+      store = configureStore({
+        [Step.START]: {
+          transitions: [
+            {target: Step.MIDDLE, default: true}
+          ],
+          skippable: true
+        },
+        [Step.MIDDLE]: {
+          transitions: [
+            {target: Step.MINOR_CONFIRMATION, canActivate: (data) => !!data.age && data.age < 18},
+            {target: Step.END, default: true}
+          ],
+          skippable: true
+        },
+        [Step.MINOR_CONFIRMATION]: {
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          transitions: [
+            {finish: true, default: true}
+          ]
+        }
+      })
+
+      store.next()
+      store.next({age: 12})
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+      store.skip()
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+    })
+
+    it('should allow skipping after moving from a skippable step to another skippable step', () => {
+      store.next()
+      store.skip()
+      expect(store.currentStep()).toBe(Step.END)
+    })
+
+    it('should not skip when the last step was skippable and next() is called on another skippable step', () => {
+      store.next()
+      store.next({age: 32})
+      expect(store.currentStep()).toBe(Step.END)
+    })
+
+    it('should not skip when the last step was skippable and next() is called on a non-skippable step', () => {
+      TestBed.resetTestingModule()
+      store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true}],
+          skippable: true
+        },
+        [Step.MIDDLE]: {
+          transitions: [{target: Step.MINOR_CONFIRMATION, default: true}]
+        },
+        [Step.MINOR_CONFIRMATION]: {
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      store.next()
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      store.next()
+      expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+    })
+  })
 })

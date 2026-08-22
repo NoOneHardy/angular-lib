@@ -53,6 +53,7 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
     path: S[]
     error: string | null
     isFinished: boolean
+    isSkipping: boolean
   }
 
   const initialState: WorkflowState = {
@@ -62,7 +63,8 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
     direction: 'forward',
     path: [],
     error: null,
-    isFinished: false
+    isFinished: false,
+    isSkipping: false
   }
 
   /** Every position the config declares, or `null` while `providePositions` is off. */
@@ -87,6 +89,8 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
           const config = transitionConfig[currentStep]
           if (config === undefined) return this.setError('No transition config found for current step')
 
+          if (!config.skippable && state.isSkipping()) return patchState(state, {isSkipping: false})
+
           const transitions = config.transitions
           const transition = transitions ? getTransition(state.data(), transitions) : null
 
@@ -102,6 +106,8 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
           patchState(state, {
             currentMeta: transitionConfig[state.currentStep()]?.meta ?? null
           })
+
+          if (state.isSkipping()) this.next()
         },
         back(...keys: (keyof Partial<T>)[]): void {
           patchState(state, {isFinished: false})
@@ -125,6 +131,10 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
           patchState(state, {
             currentMeta: transitionConfig[state.currentStep()]?.meta ?? null
           })
+        },
+        skip(): void {
+          patchState(state, {isSkipping: true})
+          this.next()
         },
         setError(error: string): void {
           patchState(state, {error})
