@@ -4,10 +4,12 @@
 
 <mat-stepper [selectedIndex]="store.currentIndex()" n1hBlockStepperClicks>
   @for (position of store.positions(); track $index) {
-    <mat-step [label]="store.currentPosition() === position ? store.currentMeta()?.title ?? '' : ''">
+    <mat-step [label]="position.label">
       @if (store.isFinished()) {
+        <h2>Complete</h2>
         <p>Workflow finished!</p>
       } @else {
+        <h2>{{ store.currentMeta()?.title }}</h2>
         @switch (store.currentStep()) {
           @case (OnboardingStep.ACCOUNT) {
             <n1h-workflow-demo-account/>

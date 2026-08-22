@@ -1,12 +1,18 @@
 import {Signal} from '@angular/core'
 
 /**
- * Identifier of a step's position within a workflow.
+ * Data structure identifying a step's position within a workflow.
  *
- * Kept as `number` so plain values as well as numeric enums can be used.
- * Only numbers are supported in order to keep an ordered structure.
+ * The `label` is a human-readable label for the step, and the `order` is a number that determines the step's position relative to other steps.
+ * Steps with lower `order` values come before steps with higher `order` values. Steps with the same `order` value are considered to be at the same position.
+ *
+ * The `Position` type is used in the workflow store to track the current step's position and to provide a list of all positions in the workflow.
+ * It is also used in the `PositionSignals` interface to provide signals for the current position, index, and total number of positions.
  */
-export type Position = number
+export interface Position {
+  label: string
+  order: number
+}
 
 /** The signals a store carries on top of the rest once `providePositions` is enabled. */
 export interface PositionSignals {

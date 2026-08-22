@@ -28,33 +28,56 @@ export enum OnboardingStep {
 
 export interface OnboardingStepMeta {
   title: string
-  position: number
 }
 
 export type DemoOnboardingWorkflowStore = PositionedWorkflowStore<OnboardingData, OnboardingStep, OnboardingStepMeta>
 
 export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
   [OnboardingStep.ACCOUNT]: {
-    meta: {title: 'Account', position: 1},
+    meta: {
+      title: 'Account',
+      position: {
+        order: 0,
+        label: 'Account'
+      }
+    },
     transitions: [
       {target: OnboardingStep.PROFILE, default: true}
     ]
   },
   [OnboardingStep.PROFILE]: {
-    meta: {title: 'Profile', position: 2},
+    meta: {
+      title: 'Profile',
+      position: {
+        order: 1,
+        label: 'Profile'
+      }
+    },
     transitions: [
       {target: OnboardingStep.PREFERENCES, canActivate: data => data.age && data.age >= 18 || false},
       {target: OnboardingStep.GUARDIAN_CONSENT, default: true}
     ]
   },
   [OnboardingStep.GUARDIAN_CONSENT]: {
-    meta: {title: 'Guardian', position: 2},
+    meta: {
+      title: 'Guardian Consent',
+      position: {
+        order: 1,
+        label: 'Profile'
+      }
+    },
     transitions: [
       {target: OnboardingStep.PREFERENCES, default: true}
     ]
   },
   [OnboardingStep.PREFERENCES]: {
-    meta: {title: 'Preferences', position: 3},
+    meta: {
+      title: 'Preferences',
+      position: {
+        order: 2,
+        label: 'Preferences'
+      }
+    },
     transitions: [
       {finish: true, default: true}
     ]

@@ -265,12 +265,12 @@ they are not part of the store at all:
   <tbody>
   <tr>
     <td><code>positions</code></td>
-    <td><code>number[]</code> <em>(computed)</em></td>
+    <td><code>Position[]</code> <em>(computed)</em></td>
     <td>Every position the workflow can reach, in ascending order and without duplicates.</td>
   </tr>
   <tr>
     <td><code>currentPosition</code></td>
-    <td><code>number | null</code> <em>(computed)</em></td>
+    <td><code>Position | null</code> <em>(computed)</em></td>
     <td>Position of the current step.</td>
   </tr>
   <tr>
@@ -401,12 +401,11 @@ import {workflowStoreFactory, workflowStore, PositionedTransitionConfig} from '@
 
 interface OnboardingStepMeta {
   title: string
-  position: number // numeric enums work as well
 }
 
 const transitions: PositionedTransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
   [OnboardingStep.ACCOUNT]: {
-    meta: {title: 'Account', position: 1},
+    meta: {title: 'Account', position: {order: 1, label: 'Account'}},
     transitions: [
       {target: OnboardingStep.PROFILE, default: true}
     ]
@@ -432,11 +431,11 @@ export class OnboardingComponent {
 
 With the option set, `meta` is mandatory on every step and has to carry a `position` — the factory takes a
 `PositionedTransitionConfig<T, S, M>` instead of a `TransitionConfig<T, S, M>` then, so a step without a position
-is a compile error instead of a gap in the progress display. A position is a `number` — that's what gives the
-workflow an order to sort by — so a numeric enum of positions works just as well as the plain numbers above:
+is a compile error instead of a gap in the progress display. A position is a `{order: number, label: string}` —
+`order` is what gives the workflow an order to sort by, and `label` is the human-readable text for it:
 
 ```html
-<p>Step {{ store.currentPosition() }} of {{ store.totalPositions() }}</p>
+<p>Step {{ store.currentIndex() + 1 }} of {{ store.totalPositions() }}: {{ store.currentPosition()?.label }}</p>
 ```
 
 `positions` lists each position exactly once, sorted ascending, so the order of the progress display comes from the

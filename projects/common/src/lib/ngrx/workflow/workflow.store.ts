@@ -154,7 +154,7 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
       currentPosition,
       currentIndex: computed(() => {
         const position = currentPosition()
-        return position === null ? null : positions.indexOf(position)
+        return position === null ? null : positions.findIndex(p => p.order === position.order)
       }),
       totalPositions: computed(() => positions.length)
     }
@@ -163,7 +163,11 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
   /** Collects the position of every step in ascending order, dropping duplicates. */
   function collectPositions(): Position[] {
     const steps: TransitionConfig<T, S, M>[S][] = Object.values(transitionConfig)
-    return [...new Set(steps.map(step => positionOf(step.meta)).filter(position => position !== null))].sort((a, b) => a - b)
+    const posEntries = steps.map(s => positionOf(s.meta)).filter(p => p !== null)
+    const posMap = Object.fromEntries(posEntries.map(p => [p.order, p.label]))
+    return [...new Set(posEntries.map(p => p.order))]
+      .sort((a, b) => a - b)
+      .map(order => ({order, label: posMap[order]}))
   }
 
   /**
