@@ -17,6 +17,7 @@ enum Step {
 
 interface StepMeta {
   title: string
+  subtitle?: string
 }
 
 const defaultConfig: TransitionConfig<WizardData, Step, StepMeta> = {
@@ -194,6 +195,114 @@ describe('workflowStoreFactory', () => {
       expect(store.error()).toBe('No transition found')
       expect(store.currentMeta()).toEqual({title: 'Start'})
     })
+
+    it('should let a transition override fields of the target step meta', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toEqual({title: 'Overridden'})
+    })
+
+    it('should merge the transition meta on top of the target step meta, keeping fields it does not override', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', subtitle: 'Middle subtitle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentMeta()).toEqual({title: 'Overridden', subtitle: 'Middle subtitle'})
+    })
+
+    it('should ignore the transition meta override when the target step has no meta at all', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toBeNull()
+    })
+
+    it('should not apply a meta override from a transition that was not taken', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [
+            {target: Step.END, canActivate: () => false, meta: {title: 'Should not apply'}},
+            {target: Step.MIDDLE, default: true}
+          ]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toEqual({title: 'Middle'})
+    })
+
+    it('should carry the overridden meta into path when transitioning away again', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+      store.next()
+
+      expect(store.path()).toEqual([
+        {step: Step.START, data: {}, meta: null},
+        {step: Step.MIDDLE, data: {}, meta: {title: 'Overridden'}}
+      ])
+    })
+
+    it('should restore the overridden meta on back() after transitioning away again', () => {
+      const store = configureStore({
+        [Step.START]: {
+          transitions: [{target: Step.MIDDLE, default: true, meta: {title: 'Overridden'}}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle'},
+          transitions: [{target: Step.END, default: true}]
+        }
+      })
+
+      store.next()
+      store.next()
+      store.back()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentMeta()).toEqual({title: 'Overridden'})
+    })
   })
 
   describe('positions', () => {
@@ -344,6 +453,32 @@ describe('workflowStoreFactory', () => {
       expect('currentPosition' in store).toBe(false)
       expect('currentIndex' in store).toBe(false)
       expect('totalPositions' in store).toBe(false)
+    })
+
+    it('should let a transition override the target step position', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {
+          meta: {title: 'Start', position: {order: 10, label: 'Start'}},
+          transitions: [{
+            target: Step.MIDDLE,
+            default: true,
+            meta: {position: {order: 25, label: 'Overridden'}}
+          }]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', position: {order: 20, label: 'Middle'}},
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          meta: {title: 'End', position: {order: 30, label: 'End'}},
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      store.next()
+
+      expect(store.currentStep()).toBe(Step.MIDDLE)
+      expect(store.currentPosition()).toEqual({order: 25, label: 'Overridden'})
     })
 
     it('should not carry any position signal when providePositions is false, even with positions configured', () => {

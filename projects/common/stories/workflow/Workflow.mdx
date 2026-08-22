@@ -16,7 +16,7 @@ This setup allows configuring complex workflows using a single and simple transi
 The demo below follows a container/step split that works well for most workflows:
 
 - **One container component** provides the store (as in [Creating a store](#creating-a-store)) and
-  renders the step whose selector matches `currentStep`, via a `@switch`:
+renders the step whose selector matches `currentStep`, via a `@switch`:
 
 ```html
 <!-- onboarding.component.html -->
@@ -44,13 +44,13 @@ The demo below follows a container/step split that works well for most workflows
 }
 ```
 
-  The container never touches step-specific fields — it only reacts to `hasError`, `isFinished` and
-  `currentStep`, so adding or reordering steps means editing this `@switch` and the `TransitionConfig`,
-  nothing else.
+The container never touches step-specific fields — it only reacts to `hasError`, `isFinished` and
+`currentStep`, so adding or reordering steps means editing this `@switch` and the `TransitionConfig`,
+nothing else.
 
 - **One component per step** injects the same store token, owns its own form, and only calls `next()`
-  once that form is valid — this is where local validation lives (see the note under
-  [`next()`](#nextdata-partialt)):
+once that form is valid — this is where local validation lives (see the note under
+[`next()`](#nextdata-partialt)):
 
 ```ts
 // onboarding-account.component.ts
@@ -74,8 +74,8 @@ export class OnboardingAccountComponent implements OnInit {
 }
 ```
 
-  Re-hydrating the form from `store.data()` in `ngOnInit` (as above) means a step keeps its values if
-  the user navigates away with `next()` and returns to it later.
+Re-hydrating the form from `store.data()` in `ngOnInit` (as above) means a step keeps its values if
+the user navigates away with `next()` and returns to it later.
 
 ## Try it
 
@@ -249,7 +249,8 @@ providers: [
   <tr>
     <td><code>isSkipping</code></td>
     <td><code>boolean</code></td>
-    <td><code>true</code> for the duration of a <a href="#skipdata-partialt"><code>skip()</code></a> call, while it's still
+    <td><code>true</code> for the duration of a <a href="#skipdata-partialt"><code>skip()</code></a> call, while it's
+      still
       walking forward through <code>skippable</code> steps. Back to <code>false</code> once it lands on a step
       that isn't <code>skippable</code>. Not meant to be read from outside the store — <code>skip()</code> itself
       is synchronous, so a caller never observes it as <code>true</code>.</td>
@@ -371,7 +372,7 @@ validation needs to report a failure that isn't naturally expressed as "no trans
 ## Transitions
 
 Each step in a `TransitionConfig<T, S, M>` maps to a `{transitions, meta?}` entry. `transitions` is
-an ordered array of `Transition<T, S>` — `next()` picks the **first** one that applies:
+an ordered array of `Transition<T, S, M>` — `next()` picks the **first** one that applies:
 
 1. The first transition in the array whose `canActivate(data)` returns a truthy value.
 2. Otherwise, the first transition in the array marked `default: true`.
@@ -389,7 +390,8 @@ also has to say where it goes:
 
 A transition is one of `{target, canActivate}`, `{target, default}`, `{finish: true, canActivate}`
 or `{finish: true, default}` — `target` and `finish` are mutually exclusive, as are `canActivate`
-and `default`.
+and `default`. Any of these can also carry an optional `meta: Partial<M>` — see
+[Overriding step metadata per transition](#overriding-step-metadata-per-transition) below.
 
 ## Skippable steps
 
@@ -469,6 +471,45 @@ doesn't declare one. It is left untouched by a transition that errors, and — l
 keeps the last active step's `meta` once the workflow finishes, since `next()` doesn't change
 `currentStep` when a transition has `finish: true`.
 
+### Overriding step metadata per transition
+
+A transition can carry its own `meta: Partial<M>`, layered on top of the target step's `meta` when
+`next()` moves there — useful when the same step means slightly different things depending on how
+it was reached (e.g. a different title for a branch that skipped a preceding step):
+
+```ts
+const transitions: TransitionConfig<OnboardingData, OnboardingStep, StepMeta> = {
+  [OnboardingStep.WELCOME]: {
+    transitions: [
+      {
+        target: OnboardingStep.ACCOUNT,
+        canActivate: data => data.invited,
+        meta: {title: 'Finish setting up your invite'}
+      },
+      {target: OnboardingStep.ACCOUNT, default: true}
+    ]
+  },
+  [OnboardingStep.ACCOUNT]: {
+    meta: {title: 'Account'},
+    transitions: [
+      {target: OnboardingStep.PROFILE, default: true}
+    ]
+  },
+  // ...
+}
+```
+
+The taken transition's `meta` is shallow-merged over the target step's own `meta`, field by field —
+fields the transition doesn't set fall back to the step's. In the example above, an invited user landing on
+`ACCOUNT` sees `{title: 'Finish setting up your invite'}`; everyone else sees the step's own
+`{title: 'Account'}`.
+
+The override only applies when the target step declares a `meta` of its own — a transition's `meta`
+on a step with no `meta` at all is ignored, and `currentMeta` stays `null`, same as for a step with no
+metadata and no overriding transition. `back()` restores the overridden `meta` exactly as it was
+computed on the way in, since it comes from the snapshot pushed onto `path`, not from re-reading the
+step's config.
+
 ## Step positions
 
 Steps and positions aren't the same thing: a branching workflow can send users through different steps while
@@ -526,6 +567,15 @@ does with its guardian-consent step: both steps then report the same `currentInd
 number of *distinct* positions. Positions are fixed slots in the workflow rather than a count of the steps taken, so
 a branch that skips a position's only step skips that position too.
 
+Since `position` lives on `meta`, a transition's `meta` override (see
+[Overriding step metadata per transition](#overriding-step-metadata-per-transition)) can override `position`
+too — a branch that reaches a step early can report a different `currentPosition` than one reaching it later,
+without needing a separate step for each. `positions` itself is unaffected either way: it's collected once from
+the static config, not from what any transition overrides at runtime.
+
+> Declaring a position in a transition's `meta` override that no step declares will make `currentIndex()` return `-1`,
+since `positions()` doesn't contain it. Override only to positions that exist in the static step config.
+
 Without `providePositions`, `meta` stays optional and the store carries no position signals at all — reading
 `positions()`, `currentPosition()`, `currentIndex()` or `totalPositions()` on such a store is a compile error, not
 a `null`. The two kinds of store therefore have two types: `WorkflowStore<T, S, M>` without positions and
@@ -548,6 +598,6 @@ numeric workflow that starts at step `0` behaves the same as one starting at ste
 `next()` distinguishes two ways a step can be misconfigured, rather than throwing:
 
 - `TransitionConfig` has no entry at all for `currentStep` (a step referenced by a transition but
-  never defined, or a typo) — `error` is set to `'No transition config found for current step'`.
+never defined, or a typo) — `error` is set to `'No transition config found for current step'`.
 - The entry exists but its `transitions` is missing or empty — treated the same as no transition
-  matching, so `error` is set to `'No transition found'`.
+matching, so `error` is set to `'No transition found'`.

@@ -115,8 +115,11 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
             ],
             error: null
           })
+
+          const newMeta = transitionConfig[state.currentStep()]?.meta ?? null
+          const metaOverride = transition.meta ?? {}
           patchState(state, {
-            currentMeta: transitionConfig[state.currentStep()]?.meta ?? null
+            currentMeta: newMeta ? {...newMeta, ...metaOverride} : null
           })
 
           if (state.isSkipping()) this.next()
@@ -136,9 +139,6 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
             path: path.slice(0, -1),
             error: null
           })
-          patchState(state, {
-            currentMeta: transitionConfig[state.currentStep()]?.meta ?? null
-          })
         },
         skip(data?: Partial<T>): void {
           patchState(state, {isSkipping: true})
@@ -151,7 +151,7 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
     })
   )
 
-  function getTransition<T extends object, S extends WorkflowStep>(data: Partial<T>, transitions: Transition<T, S>[]): Transition<T, S> | null {
+  function getTransition(data: Partial<T>, transitions: Transition<T, S, M>[]): Transition<T, S, M> | null {
     const guardedTransition = transitions.find(t => t.canActivate ? !!t.canActivate(data) : false)
     if (guardedTransition !== undefined) return guardedTransition
     return transitions.find(t => t.default) ?? null
