@@ -79,13 +79,19 @@ export class OnboardingAccountComponent implements OnInit {
 
 ## Try it
 
-The demo below is an onboarding wizard built on top of the store: `ACCOUNT` → `PROFILE` → (minors only) `GUARDIAN_CONSENT` → `PREFERENCES` → finish.
+The demo below is an onboarding wizard built on top of the store: `WELCOME` → `FEATURES` → `ACCOUNT` → `PROFILE` →
+(minors only) `GUARDIAN_CONSENT` → `PREFERENCES` → finish.
 Each step validates its own fields locally and only calls `next()` once they're valid — try leaving a field empty to see that
 handled in the step itself, then enter an age under 18 to see the workflow branch to the
 `GUARDIAN_CONSENT` step instead of skipping straight to `PREFERENCES`.
 The step counter above the form comes from [Step positions](#step-positions) — the extra `GUARDIAN_CONSENT` step
-shares position 2 with `PROFILE`, so a minor's longer path still reads "Step 2 of 3" there instead of stretching
+shares a position with `PROFILE`, so a minor's longer path still reads "Step 2 of 4" there instead of stretching
 the counter.
+
+The two opening screens, `WELCOME` and `FEATURES`, pitch the (imaginary) product and are both marked `skippable` —
+click "Skip to login" on either one instead of stepping through with "Get started"/"Continue" to see a single
+[`skip()`](#skipdata-partialt) call walk across both of them in one go, landing on `ACCOUNT`, the first step that isn't
+skippable.
 
 <Canvas of={WorkflowDemoStories.Interactive}/>
 <Controls of={WorkflowDemoStories.Interactive}/>
@@ -238,6 +244,14 @@ providers: [
       <code>next()</code> is a no-op. Reset to <code>false</code> by <code>back()</code>.</td>
   </tr>
   <tr>
+    <td><code>isSkipping</code></td>
+    <td><code>boolean</code></td>
+    <td><code>true</code> for the duration of a <a href="#skipdata-partialt"><code>skip()</code></a> call, while it's still
+      walking forward through <code>skippable</code> steps. Back to <code>false</code> once it lands on a step
+      that isn't <code>skippable</code>. Not meant to be read from outside the store — <code>skip()</code> itself
+      is synchronous, so a caller never observes it as <code>true</code>.</td>
+  </tr>
+  <tr>
     <td><code>hasError</code></td>
     <td><code>boolean</code> <em>(computed)</em></td>
     <td>Shorthand for <code>!!error()</code>.</td>
@@ -325,6 +339,24 @@ If `path` is empty (no forward transition has happened yet, or `back()` has alre
 whole path), `isFinished` is still reset, but nothing else changes — the workflow fails silently so no
 error is thrown.
 
+### `skip(data?: Partial<T>)`
+
+Walks forward through consecutive `skippable` steps (see [Skippable steps](#skippable-steps)) in a single call,
+by repeatedly calling `next()` internally, evaluating each step's transitions exactly as `next()` normally would —
+guarded transitions, defaults, branches and all. It stops as soon as it reaches a step whose config entry doesn't
+set `skippable: true`, leaving `currentStep` on that step without consuming it, ready for the user to fill in
+that step's form and call `next()` themselves.
+
+If `currentStep` itself isn't `skippable` when `skip()` is called, it's a no-op — the workflow stays exactly
+where it was. If every step it walks through is `skippable` all the way to a `finish: true` transition,
+`isFinished` ends up `true`, same as it would from a chain of plain `next()` calls.
+
+`data`, if given, is merged in on the *first* `next()` call only — the same one-shot merge `next(data)` itself
+does — so it can supply whatever the very first guarded transition needs to decide where to branch. Every
+further step `skip()` walks through afterward calls `next()` with no arguments, same as before, so `skip()` still
+isn't a way to fill in data for later steps — reserve `skippable` for steps that don't need anything else from
+the user once that first hop is resolved.
+
 ### `setError(error: string)`
 
 Sets `error` directly. `next()` and `back()` call this internally; it's exposed for cases where
@@ -353,6 +385,48 @@ also has to say where it goes:
 A transition is one of `{target, canActivate}`, `{target, default}`, `{finish: true, canActivate}`
 or `{finish: true, default}` — `target` and `finish` are mutually exclusive, as are `canActivate`
 and `default`.
+
+## Skippable steps
+
+A step's config entry can be marked `skippable: true`, alongside its `transitions`, to say that a user is
+allowed to bypass it via [`skip()`](#skipdata-partialt) instead of filling it in via `next()`:
+
+```ts
+const transitions: TransitionConfig<OnboardingData, OnboardingStep> = {
+  [OnboardingStep.WELCOME]: {
+    skippable: true,
+    transitions: [
+      {target: OnboardingStep.FEATURES, default: true}
+    ]
+  },
+  [OnboardingStep.FEATURES]: {
+    skippable: true,
+    transitions: [
+      {target: OnboardingStep.ACCOUNT, default: true}
+    ]
+  },
+  [OnboardingStep.ACCOUNT]: {
+    // not skippable — skip() stops here
+    transitions: [
+      {target: OnboardingStep.PROFILE, default: true}
+    ]
+  },
+  // ...
+}
+```
+
+`skippable` only changes what `skip()` does — it has no effect on `next()` or `back()`, and a step without it
+still behaves exactly as before. It defaults to `false`/unset, so nothing has to opt in to keep the store's
+existing behavior.
+
+A step being `skippable` doesn't mean *every* transition out of it is unconditional — `skip()` still evaluates
+`canActivate` guards and defaults exactly as `next()` would (see [Transitions](#transitions)), so a skip can
+branch, just like a normal forward step can. It's the step being left that has to allow skipping, not the
+transition being taken.
+
+Reserve `skippable` for steps that don't need anything from the user to move past — an intro, a promotional
+screen, an already-known preference — since `skip()` only accepts `data` for the very first step it leaves
+(see [`skip()`](#skipdata-partialt)); every step after that is skipped with no data at all.
 
 ## Step metadata
 

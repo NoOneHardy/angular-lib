@@ -132,9 +132,9 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
             currentMeta: transitionConfig[state.currentStep()]?.meta ?? null
           })
         },
-        skip(): void {
+        skip(data?: Partial<T>): void {
           patchState(state, {isSkipping: true})
-          this.next()
+          this.next(data)
         },
         setError(error: string): void {
           patchState(state, {error})

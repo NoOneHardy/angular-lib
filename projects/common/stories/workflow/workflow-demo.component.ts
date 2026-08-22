@@ -11,6 +11,8 @@ import {
 } from './components/workflow-demo-preferences/workflow-demo-preferences.component'
 import {MatStep, MatStepper} from '@angular/material/stepper'
 import {BlockStepperClicksDirective} from './directives/block-stepper-clicks.directive'
+import {WorkflowDemoWelcomeComponent} from './components/workflow-demo-welcome/workflow-demo-welcome.component'
+import {WorkflowDemoFeaturesComponent} from './components/workflow-demo-features/workflow-demo-features.component'
 
 export interface OnboardingData {
   email: string
@@ -20,6 +22,8 @@ export interface OnboardingData {
 }
 
 export enum OnboardingStep {
+  WELCOME = 'WELCOME',
+  FEATURES = 'FEATURES',
   ACCOUNT = 'ACCOUNT',
   PROFILE = 'PROFILE',
   GUARDIAN_CONSENT = 'GUARDIAN_CONSENT',
@@ -33,11 +37,38 @@ export interface OnboardingStepMeta {
 export type DemoOnboardingWorkflowStore = PositionedWorkflowStore<OnboardingData, OnboardingStep, OnboardingStepMeta>
 
 export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, OnboardingStep, OnboardingStepMeta> = {
+  [OnboardingStep.WELCOME]: {
+    meta: {
+      title: 'Welcome',
+      position: {
+        order: 0,
+        label: 'Welcome'
+      }
+    },
+    // lets a visitor who already knows the product skip straight past both intro screens to the login/account step
+    skippable: true,
+    transitions: [
+      {target: OnboardingStep.FEATURES, default: true}
+    ]
+  },
+  [OnboardingStep.FEATURES]: {
+    meta: {
+      title: 'Features',
+      position: {
+        order: 0,
+        label: 'Welcome'
+      }
+    },
+    skippable: true,
+    transitions: [
+      {target: OnboardingStep.ACCOUNT, default: true}
+    ]
+  },
   [OnboardingStep.ACCOUNT]: {
     meta: {
       title: 'Account',
       position: {
-        order: 0,
+        order: 10,
         label: 'Account'
       }
     },
@@ -49,7 +80,7 @@ export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, O
     meta: {
       title: 'Profile',
       position: {
-        order: 1,
+        order: 20,
         label: 'Profile'
       }
     },
@@ -62,7 +93,7 @@ export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, O
     meta: {
       title: 'Guardian Consent',
       position: {
-        order: 1,
+        order: 20,
         label: 'Profile'
       }
     },
@@ -74,7 +105,7 @@ export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, O
     meta: {
       title: 'Preferences',
       position: {
-        order: 2,
+        order: 30,
         label: 'Preferences'
       }
     },
@@ -91,12 +122,14 @@ export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, O
       provide: workflowStore,
       useClass: workflowStoreFactory<OnboardingData, OnboardingStep, OnboardingStepMeta>(
         onboardingTransitions,
-        OnboardingStep.ACCOUNT,
+        OnboardingStep.WELCOME,
         {providePositions: true}
       )
     },
   ],
   imports: [
+    WorkflowDemoWelcomeComponent,
+    WorkflowDemoFeaturesComponent,
     WorkflowDemoAccountComponent,
     FormsModule,
     JsonPipe,
