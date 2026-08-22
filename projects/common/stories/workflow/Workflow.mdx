@@ -226,9 +226,12 @@ providers: [
   </tr>
   <tr>
     <td><code>path</code></td>
-    <td><code>S[]</code></td>
-    <td>Steps visited on the way to <code>currentStep</code>, most recent last — the back stack <code>back()</code> pops
-      from.</td>
+    <td><code>WorkflowPath&lt;T, S, M&gt;</code></td>
+    <td>Snapshots of the steps visited on the way to <code>currentStep</code>, most recent last — the back stack
+      <code>back()</code> pops from. Each entry is <code>{'{'}step, data, meta{'}'}</code>: <code>step</code> is the
+      step that was current at the time, <code>data</code> and <code>meta</code> are that step's own
+      <code>data</code> and <code>currentMeta</code> as they stood <em>before</em> the transition away from it —
+      i.e. what <code>back()</code> restores when it pops that entry.</td>
   </tr>
   <tr>
     <td><code>error</code></td>
@@ -309,11 +312,12 @@ Once `isFinished` is `true`, `next()` is a no-op — nothing in the state change
 into the store's `data`, then evaluates the transitions configured for `currentStep` (see
 [Transitions](#transitions) below) against the *merged* data:
 
-- If a transition matches and has a `target`, the store moves to it, pushes the previous
-`currentStep` onto `path`, sets `direction` to `'forward'`, and clears `error`.
-- If a transition matches and has `finish: true`, `isFinished` is set to `true`, the previous `currentStep` is
-pushed onto `path`, `direction` is set to `'forward'`, and `error` is cleared. `currentStep` itself is left
-untouched, so it keeps reporting the last active step once the workflow finishes.
+- If a transition matches and has a `target`, the store moves to it, pushes a snapshot of the step being
+left — `{step: currentStep, data, meta: currentMeta}`, `data` and `meta` as they stood *before* this
+`next()` call's own data was merged in — onto `path`, sets `direction` to `'forward'`, and clears `error`.
+- If a transition matches and has `finish: true`, `isFinished` is set to `true` and the same kind of
+snapshot is pushed onto `path`, `direction` is set to `'forward'`, and `error` is cleared. `currentStep`
+itself is left untouched, so it keeps reporting the last active step once the workflow finishes.
 - If no transition matches, `error` is set to `'No transition found'` and nothing else changes.
 
 `error` and `hasError` exist for *workflow*-level failures — a step was misconfigured, or
@@ -323,12 +327,13 @@ step, and simply don't call `next()` until it's valid; reserve `canActivate` on 
 choosing between multiple *valid* paths forward (see [Transitions](#transitions)), not for
 rejecting invalid input. The demo above validates each step locally for exactly this reason.
 
-### `back(...keys: (keyof Partial<T>)[])`
+### `back()`
 
-Resets `isFinished` to `false`, then pops the last step off `path` and moves `currentStep` back to it,
-setting `direction` to `'backward'` and clearing `error`. Any `keys` passed are reset to `undefined` on
-`data` — use this to drop values that belonged only to the step being left, so they don't leak into a
-different branch if the user takes a different path forward next time.
+Resets `isFinished` to `false`, then pops the last entry off `path` and restores `currentStep`, `data` and
+`currentMeta` to exactly what they were in that entry — i.e. the state as it stood *before* that step's own
+`next(data)` call merged its data in. This means any data a step merged in on its way out is dropped
+automatically when backing out of it, so it can't leak into a different branch if the user takes a
+different path forward next time; there's no need to name keys to reset by hand.
 
 Since a transition with `finish: true` pushes onto `path` just like one with a `target` (see
 [`next()`](#nextdata-partialt) above), calling `back()` on a finished workflow reopens it: `isFinished`
