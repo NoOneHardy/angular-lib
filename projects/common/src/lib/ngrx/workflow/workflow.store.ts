@@ -134,7 +134,7 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
   )
 
   function getTransition<T extends object, S extends WorkflowStep>(data: Partial<T>, transitions: Transition<T, S>[]): Transition<T, S> | null {
-    const guardedTransition = transitions.find(t => t.canActivate ? t.canActivate(data) : false)
+    const guardedTransition = transitions.find(t => t.canActivate ? !!t.canActivate(data) : false)
     if (guardedTransition !== undefined) return guardedTransition
     return transitions.find(t => t.default) ?? null
   }

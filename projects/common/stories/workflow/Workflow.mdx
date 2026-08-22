@@ -1,4 +1,4 @@
-import {Meta, Canvas, Controls, Source} from '@storybook/addon-docs/blocks'
+import {Meta, Canvas, Controls} from '@storybook/addon-docs/blocks'
 import * as WorkflowDemoStories from './workflow-demo.component.stories'
 
 <Meta of={WorkflowDemoStories}/>
@@ -336,7 +336,7 @@ validation needs to report a failure that isn't naturally expressed as "no trans
 Each step in a `TransitionConfig<T, S, M>` maps to a `{transitions, meta?}` entry. `transitions` is
 an ordered array of `Transition<T, S>` — `next()` picks the **first** one that applies:
 
-1. The first transition in the array whose `canActivate(data)` returns `true`.
+1. The first transition in the array whose `canActivate(data)` returns a truthy value.
 2. Otherwise, the first transition in the array marked `default: true`.
 3. Otherwise, no transition matches and `next()` errors.
 
@@ -344,7 +344,7 @@ Put more specific, guarded transitions before the fallback default — order mat
 also has to say where it goes:
 
 ```ts
-{target: 'profile', canActivate: data => !!data.email}   // guarded, moves to a step
+{target: 'profile', canActivate: data => data.email}   // guarded, moves to a step
 {target: 'preferences', default: true}                    // unconditional, moves to a step
 {finish: true, canActivate: data => data.accepted}       // guarded, ends the workflow
 {finish: true, default: true}                            // unconditional, ends the workflow
