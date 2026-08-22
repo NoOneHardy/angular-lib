@@ -11,6 +11,12 @@
       } @else {
         <h2>{{ store.currentMeta()?.title }}</h2>
         @switch (store.currentStep()) {
+          @case (OnboardingStep.WELCOME) {
+            <n1h-workflow-demo-welcome/>
+          }
+          @case (OnboardingStep.FEATURES) {
+            <n1h-workflow-demo-features/>
+          }
           @case (OnboardingStep.ACCOUNT) {
             <n1h-workflow-demo-account/>
           }
@@ -33,7 +39,6 @@
     ({
       currentStep: store.currentStep(),
       currentMeta: store.currentMeta(),
-      positions: store.positions(),
       currentPosition: store.currentPosition(),
       currentIndex: store.currentIndex(),
       totalPositions: store.totalPositions(),

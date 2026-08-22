@@ -1,15 +1,18 @@
 import {Transition} from './transition'
 import {Position} from './position'
 
+interface BaseTransitionConfig<T extends object, S extends string | number> {
+  transitions: Transition<T, S>[],
+  skippable?: boolean
+}
+
 /** Configuration of a single step: the transitions leading away from it and optional data about the step itself. */
-interface TransitionConfigWithMeta<T extends object, S extends string | number, M extends object> {
-  transitions: Transition<T, S>[]
+interface TransitionConfigWithMeta<T extends object, S extends string | number, M extends object> extends BaseTransitionConfig<T, S> {
   meta?: M
 }
 
 /** Same as {@link TransitionConfigWithMeta}, but with a mandatory `meta` that carries the step's position. */
-interface TransitionConfigWithPosition<T extends object, S extends string | number, M extends object> {
-  transitions: Transition<T, S>[]
+interface TransitionConfigWithPosition<T extends object, S extends string | number, M extends object> extends BaseTransitionConfig<T, S>{
   meta: M & {position: Position}
 }
 
