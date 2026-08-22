@@ -9,6 +9,8 @@ import {WorkflowDemoGuardianComponent} from './components/workflow-demo-guardian
 import {
   WorkflowDemoPreferencesComponent
 } from './components/workflow-demo-preferences/workflow-demo-preferences.component'
+import {MatStep, MatStepper} from '@angular/material/stepper'
+import {BlockStepperClicksDirective} from './directives/block-stepper-clicks.directive'
 
 export interface OnboardingData {
   email: string
@@ -77,12 +79,16 @@ export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, O
     JsonPipe,
     WorkflowDemoProfileComponent,
     WorkflowDemoGuardianComponent,
-    WorkflowDemoPreferencesComponent
+    WorkflowDemoPreferencesComponent,
+    MatStepper,
+    MatStep,
+    BlockStepperClicksDirective
   ],
   templateUrl: './workflow-demo.component.html',
   styleUrl: './workflow-demo.shared.scss'
 })
 export class WorkflowDemoComponent {
-  protected readonly store = inject<DemoOnboardingWorkflowStore>(workflowStore)
+  protected readonly store: DemoOnboardingWorkflowStore = inject<DemoOnboardingWorkflowStore>(workflowStore)
   protected readonly OnboardingStep = OnboardingStep
+  protected readonly Object = Object
 }
