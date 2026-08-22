@@ -24,14 +24,14 @@ const defaultConfig: TransitionConfig<WizardData, Step, StepMeta> = {
     meta: {title: 'Start'},
     transitions: [
       {target: Step.MIDDLE, default: true},
-      {target: Step.MINOR_CONFIRMATION, canActivate: (data) => data.age && data.age < 18 || false},
+      {target: Step.MINOR_CONFIRMATION, canActivate: (data) => !!data.age && data.age < 18},
     ]
   },
   [Step.MINOR_CONFIRMATION]: {
     meta: {title: 'Minor confirmation'},
     transitions: [
       {finish: true, default: true},
-      {target: Step.MIDDLE, canActivate: (data) => !!data.isMinorAgreementConfirmed},
+      {target: Step.MIDDLE, canActivate: (data) => data.isMinorAgreementConfirmed},
     ]
   },
   [Step.MIDDLE]: {
@@ -53,7 +53,7 @@ const positionedConfig: PositionedTransitionConfig<WizardData, Step, StepMeta> =
     meta: {title: 'Start', position: {order: 10, label: 'Start'}},
     transitions: [
       {target: Step.MIDDLE, default: true},
-      {target: Step.MINOR_CONFIRMATION, canActivate: (data) => data.age && data.age < 18 || false},
+      {target: Step.MINOR_CONFIRMATION, canActivate: (data) => !!data.age && data.age < 18},
     ]
   },
   [Step.MINOR_CONFIRMATION]: {
@@ -573,7 +573,7 @@ describe('workflowStoreFactory', () => {
 
     it('should clear a previously set error on a later successful transition', () => {
       const store = configureStore({
-        [Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: (data: WizardData) => !!data.name}]}
+        [Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: (data: WizardData) => data.name}]}
       })
 
       store.next()
@@ -588,7 +588,7 @@ describe('workflowStoreFactory', () => {
 
     it('should clear a previously set error when the workflow finishes', () => {
       const store = configureStore({
-        [Step.START]: {transitions: [{finish: true, canActivate: (data: WizardData) => !!data.name}]}
+        [Step.START]: {transitions: [{finish: true, canActivate: (data: WizardData) => data.name}]}
       })
 
       store.next()

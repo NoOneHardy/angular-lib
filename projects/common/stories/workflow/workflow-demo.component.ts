@@ -54,7 +54,7 @@ export const onboardingTransitions: PositionedTransitionConfig<OnboardingData, O
       }
     },
     transitions: [
-      {target: OnboardingStep.PREFERENCES, canActivate: data => data.age && data.age >= 18 || false},
+      {target: OnboardingStep.PREFERENCES, canActivate: data => !!data.age && data.age >= 18},
       {target: OnboardingStep.GUARDIAN_CONSENT, default: true}
     ]
   },
