@@ -5,6 +5,7 @@ import {Transition} from './model/transition'
 import {PlainWorkflowOptions, PositionedWorkflowOptions, WorkflowOptions} from './model/workflow-options'
 import {Position, PositionSignals} from './model/position'
 import {WorkflowStep} from './model/workflow-step'
+import {WorkflowPath} from './model/workflow-path'
 
 /**
  * Builds a workflow store class that tracks step positions.
@@ -50,7 +51,7 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
     currentStep: S
     currentMeta: M | null
     direction: 'forward' | 'backward'
-    path: S[]
+    path: WorkflowPath<T, S, M>
     error: string | null
     isFinished: boolean
     isSkipping: boolean
@@ -82,7 +83,11 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
         next(data?: Partial<T>): void {
           if (state.isFinished()) return
 
+          // Collect the current state for path
           const currentStep = state.currentStep()
+          const currentMeta = state.currentMeta()
+          const currentData = state.data()
+
           if (currentStep === undefined || currentStep === null) return this.setError('No current step found')
           if (data) patchState(state, {data: {...state.data(), ...data}})
 
@@ -100,7 +105,14 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
           patchState(state, {
             ...transitionTarget,
             direction: 'forward',
-            path: [...state.path(), currentStep],
+            path: [
+              ...state.path(),
+              {
+                step: currentStep,
+                data: currentData,
+                meta: currentMeta
+              }
+            ],
             error: null
           })
           patchState(state, {
@@ -109,21 +121,17 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
 
           if (state.isSkipping()) this.next()
         },
-        back(...keys: (keyof Partial<T>)[]): void {
+        back(): void {
           patchState(state, {isFinished: false})
 
           const path = state.path()
           if (path.length === 0) return
           const target = path[path.length - 1]
 
-          const resetData = Object.fromEntries(keys.map(key => [key, undefined]))
-
           patchState(state, {
-            data: {
-              ...state.data(),
-              ...resetData
-            },
-            currentStep: target,
+            data: target.data,
+            currentStep: target.step,
+            currentMeta: target.meta,
             direction: 'backward',
             path: path.slice(0, -1),
             error: null

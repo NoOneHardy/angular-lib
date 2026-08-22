@@ -39,7 +39,7 @@ export class WorkflowDemoGuardianComponent implements OnInit {
   }
 
   back(): void {
-    this.workflow.back('guardianEmail')
+    this.workflow.back()
   }
 
   ngOnInit(): void {
