@@ -37,7 +37,7 @@ export class WorkflowDemoProfileComponent implements OnInit {
   }
 
   back(): void {
-    this.workflow.back('age')
+    this.workflow.back()
   }
 
   ngOnInit(): void {

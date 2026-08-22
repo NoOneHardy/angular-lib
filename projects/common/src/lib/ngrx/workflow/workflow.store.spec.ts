@@ -500,7 +500,7 @@ describe('workflowStoreFactory', () => {
 
       expect(store.isFinished()).toBe(true)
       expect(store.currentStep()).toBe(Step.START)
-      expect(store.path()).toEqual([Step.START])
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: null}])
       expect(store.data()).toEqual({})
       expect(store.error()).toBeNull()
     })
@@ -600,14 +600,14 @@ describe('workflowStoreFactory', () => {
       expect(store.error()).toBeNull()
     })
 
-    it('should push the current step onto path on every forward transition', () => {
+    it('should push the current state onto path on every forward transition', () => {
       const store = configureStore()
 
-      store.next()
-      expect(store.path()).toEqual([Step.START])
+      store.next({age: 25})
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}])
 
-      store.next()
-      expect(store.path()).toEqual([Step.START, Step.MIDDLE])
+      store.next({name: 'Tony Stark'})
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}, {step: Step.MIDDLE, data: {age: 25}, meta: null}])
     })
 
     it('should push onto path when a transition finishes the workflow', () => {
@@ -615,7 +615,7 @@ describe('workflowStoreFactory', () => {
 
       store.next()
 
-      expect(store.path()).toEqual([Step.START])
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: null}])
     })
 
     it('should not push onto path when the transition errors', () => {
@@ -631,7 +631,7 @@ describe('workflowStoreFactory', () => {
     it('should fail silently when called before any forward transition', () => {
       const store = configureStore()
 
-      store.back('name')
+      store.back()
 
       expect(store.error()).toBeNull()
       expect(store.hasError()).toBe(false)
@@ -647,7 +647,7 @@ describe('workflowStoreFactory', () => {
 
       expect(store.currentStep()).toBe(Step.MIDDLE)
       expect(store.direction()).toBe('backward')
-      expect(store.path()).toEqual([Step.START])
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}])
       expect(store.error()).toBeNull()
     })
 
@@ -674,22 +674,24 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.START)
     })
 
-    it('should reset the given keys to undefined on the merged data', () => {
+    it('should reset data to previous state', () => {
       const store = configureStore()
 
-      store.next({name: 'Tony Stark', age: 30})
-      store.back('age')
-
-      expect(store.data()).toEqual({name: 'Tony Stark', age: undefined})
-    })
-
-    it('should leave data untouched when called without keys', () => {
-      const store = configureStore()
-
+      expect(store.data()).toEqual({})
       store.next({name: 'Tony Stark'})
       store.back()
 
-      expect(store.data()).toEqual({name: 'Tony Stark'})
+      expect(store.data()).toEqual({})
+    })
+
+    it('should reset meta to previous state', () => {
+      const store = configureStore()
+
+      store.next({age: 12})
+      expect(store.currentMeta()).toEqual({title: 'Minor confirmation'})
+      store.back()
+
+      expect(store.currentMeta()).toEqual({title: 'Start'})
     })
 
     it('should clear a previously set error on a successful step back', () => {
@@ -721,7 +723,7 @@ describe('workflowStoreFactory', () => {
 
       expect(store.isFinished()).toBe(false)
       expect(store.currentStep()).toBe(Step.MIDDLE)
-      expect(store.path()).toEqual([Step.START])
+      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: null}])
     })
 
     it('should allow next() again after going back from a finished workflow', () => {
@@ -841,7 +843,7 @@ describe('workflowStoreFactory', () => {
       store.skip()
       expect(store.currentStep()).toBe(Step.END)
       console.log(store.path())
-      expect(store.path().findIndex(s => s === Step.MINOR_CONFIRMATION)).not.toBe(-1)
+      expect(store.path().findIndex(s => s.step === Step.MINOR_CONFIRMATION)).not.toBe(-1)
     })
 
     it('should mark the workflow finished when skipping to a step that has no further transitions and is skippable', () => {
