@@ -11,7 +11,7 @@ export class BlockStepperClicksDirective implements AfterViewInit {
 
     headers.forEach(header => {
       header.style.pointerEvents = 'none'
+      header.tabIndex = -1
     })
   }
-
 }
