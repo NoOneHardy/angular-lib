@@ -1,0 +1,14 @@
+node_modules
+dist
+.angular
+.idea
+.claude
+.git
+.github
+.run
+graphify-out
+storybook-static
+documentation.json
+*storybook.log
+pnpm-lock.yaml
+LICENSE
