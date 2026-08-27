@@ -83,13 +83,14 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
         next(data?: Partial<T>): void {
           if (state.isFinished()) return
 
-          // Collect the current state for path
           const currentStep = state.currentStep()
+          if (currentStep === undefined || currentStep === null) return this.setError('No current step found')
+
+          if (data) patchState(state, {data: {...state.data(), ...data}})
+
+          // Collect the current state for path
           const currentMeta = state.currentMeta()
           const currentData = state.data()
-
-          if (currentStep === undefined || currentStep === null) return this.setError('No current step found')
-          if (data) patchState(state, {data: {...state.data(), ...data}})
 
           const config = transitionConfig[currentStep]
           if (config === undefined) return this.setError('No transition config found for current step')
