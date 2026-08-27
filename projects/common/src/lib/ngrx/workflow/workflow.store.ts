@@ -133,13 +133,14 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
           const target = path[path.length - 1]
 
           patchState(state, {
-            data: target.data,
             currentStep: target.step,
             currentMeta: target.meta,
             direction: 'backward',
             path: path.slice(0, -1),
             error: null
           })
+
+          if (!options.preserveDataOnBack) patchState(state, {data: target.data})
         },
         skip(data?: Partial<T>): void {
           patchState(state, {isSkipping: true})
