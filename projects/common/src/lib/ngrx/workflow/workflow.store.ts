@@ -148,6 +148,9 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
         },
         setError(error: string): void {
           patchState(state, {error})
+        },
+        reset(): void {
+          patchState(state, initialState)
         }
       }
     })
