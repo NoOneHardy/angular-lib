@@ -12,8 +12,8 @@ interface TransitionConfigWithMeta<T extends object, S extends string | number, 
 }
 
 /** Same as {@link TransitionConfigWithMeta}, but with a mandatory `meta` that carries the step's position. */
-interface TransitionConfigWithPosition<T extends object, S extends string | number, M extends object> extends BaseTransitionConfig<T, S, M & {position: Position}>{
-  meta: M & {position: Position}
+interface TransitionConfigWithPosition<T extends object, S extends string | number, M extends object> extends BaseTransitionConfig<T, S, M & {position: Position | number}>{
+  meta: M & {position: Position | number}
 }
 
 export type TransitionConfig<

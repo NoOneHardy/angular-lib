@@ -3,6 +3,13 @@ export interface WorkflowOptions<T extends object> {
   /** Data the workflow starts with, before any transition ran. */
   initialData: T
   /**
+   * Whether the store preserves the data of a step when going back to it.
+   *
+   * When `true`, the store does not reset the data of a step when leaving it to a previous step;
+   * otherwise, the store resets the data of a step when leaving it to a previous step.
+   */
+  preserveDataOnBack: boolean
+  /**
    * Whether the store tracks the position of the current step.
    *
    * When `true`, every step has to declare a `meta.position` and the store carries the `positions`,

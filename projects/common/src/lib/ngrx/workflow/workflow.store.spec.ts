@@ -110,6 +110,25 @@ function configurePositionedStore(
   }).inject<PositionedWorkflowStore<WizardData, Step, StepMeta>>(workflowStore)
 }
 
+function configurePreserveStore(
+  config: Partial<TransitionConfig<WizardData, Step, StepMeta>> = defaultConfig,
+  initialStep: Step = Step.START,
+  initialData: Partial<WizardData> = {}
+) {
+  return TestBed.configureTestingModule({
+    providers: [
+      {
+        provide: workflowStore,
+        useClass: workflowStoreFactory<WizardData, Step, StepMeta>(
+          config as TransitionConfig<WizardData, Step, StepMeta>,
+          initialStep,
+          {initialData, preserveDataOnBack: true}
+        )
+      }
+    ]
+  }).inject<WorkflowStore<WizardData, Step>>(workflowStore)
+}
+
 describe('workflowStoreFactory', () => {
   it('should start with the given initial step and empty defaults', () => {
     const store = configureStore()
@@ -317,7 +336,22 @@ describe('workflowStoreFactory', () => {
       expect(store.totalPositions()).toBe(3)
     })
 
-    it('should sort the positions ascending, independent of the config order', () => {
+    it('should expose every position of the config, without duplicates including numbers only positions', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {transitions: [], meta: {position: {order: 10, label: 'Start'}, title: 'Start'}},
+        [Step.MIDDLE]: {transitions: [], meta: {position: 11, title: 'Middle'}},
+        [Step.END]: {transitions: [], meta: {position: {order: 30, label: 'End'}, title: 'End'}}
+      })
+
+      expect(store.positions()).toEqual([
+        {order: 10, label: 'Start'},
+        {order: 11, label: ''},
+        {order: 30, label: 'End'},
+      ])
+      expect(store.totalPositions()).toBe(3)
+    })
+
+    it('should sort the positions numerically (objects only)', () => {
       const store = configurePositionedStore(Step.START, {
         [Step.START]: {
           meta: {title: 'Start', position: {order: 30, label: 'Start'}},
@@ -340,7 +374,7 @@ describe('workflowStoreFactory', () => {
       ])
     })
 
-    it('should sort the positions numerically', () => {
+    it('should sort the positions numerically (numbers only) ', () => {
       const store = configurePositionedStore(Step.START, {
         [Step.START]: {
           meta: {title: 'Start', position: {order: 2, label: 'Start'}},
@@ -363,6 +397,29 @@ describe('workflowStoreFactory', () => {
       ])
     })
 
+    it('should sort the positions numerically (mixed)', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {
+          meta: {title: 'Start', position: 30},
+          transitions: [{target: Step.MIDDLE, default: true}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', position: {order: 10, label: 'Middle'}},
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          meta: {title: 'End', position: {order: 20, label: 'End'}},
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      expect(store.positions()).toEqual([
+        {order: 10, label: 'Middle'},
+        {order: 20, label: 'End'},
+        {order: 30, label: ''}
+      ])
+    })
+
     it('should resolve currentIndex against the sorted positions', () => {
       const store = configurePositionedStore(Step.START, {
         [Step.START]: {
@@ -370,7 +427,7 @@ describe('workflowStoreFactory', () => {
           transitions: [{target: Step.MIDDLE, default: true}]
         },
         [Step.MIDDLE]: {
-          meta: {title: 'Middle', position: {order: 20, label: 'Middle'}},
+          meta: {title: 'Middle', position: 20},
           transitions: [{target: Step.END, default: true}]
         },
         [Step.END]: {
@@ -383,7 +440,7 @@ describe('workflowStoreFactory', () => {
 
       store.next()
 
-      expect(store.currentPosition()).toEqual({order: 20, label: 'Middle'})
+      expect(store.currentPosition()).toEqual({order: 20, label: ''})
       expect(store.currentIndex()).toBe(1)
     })
 
@@ -739,10 +796,14 @@ describe('workflowStoreFactory', () => {
       const store = configureStore()
 
       store.next({age: 25})
-      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}])
+      expect(store.path()).toEqual([{step: Step.START, data: {age: 25}, meta: {title: 'Start'}}])
 
       store.next({name: 'Tony Stark'})
-      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}, {step: Step.MIDDLE, data: {age: 25}, meta: null}])
+      expect(store.path()).toEqual([{step: Step.START, data: {age: 25}, meta: {title: 'Start'}}, {
+        step: Step.MIDDLE,
+        data: {age: 25, name: 'Tony Stark'},
+        meta: null
+      }])
     })
 
     it('should push onto path when a transition finishes the workflow', () => {
@@ -809,14 +870,26 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.START)
     })
 
-    it('should reset data to previous state', () => {
+    it('should reset data to previous state after the changes of the previous states', () => {
       const store = configureStore()
 
       expect(store.data()).toEqual({})
       store.next({name: 'Tony Stark'})
       store.back()
 
+      expect(store.data()).toEqual({name: 'Tony Stark'})
+    })
+
+    it('should only reset new data to previous state after the changes of the previous states', () => {
+      const store = configureStore()
+
       expect(store.data()).toEqual({})
+      store.next({name: 'Tony Stark'})
+      store.next({age: 12})
+      store.back()
+      store.back()
+
+      expect(store.data()).toEqual({name: 'Tony Stark'})
     })
 
     it('should reset meta to previous state', () => {
@@ -874,6 +947,52 @@ describe('workflowStoreFactory', () => {
 
       expect(store.isFinished()).toBe(true)
       expect(store.currentStep()).toBe(Step.MIDDLE)
+    })
+  })
+
+  describe('back with preserveDataOnBack', () => {
+    it('should not reset data on a single back() (same as default behavior)', () => {
+      const store = configurePreserveStore()
+
+      store.next({name: 'Tony Stark'})
+      store.back()
+
+      expect(store.data()).toEqual({name: 'Tony Stark'})
+    })
+
+    it('should keep data added on a later step when going back past the step it was added on', () => {
+      const store = configurePreserveStore()
+
+      store.next({name: 'Tony Stark'})
+      store.next({age: 12})
+      store.back()
+      store.back()
+
+      expect(store.data()).toEqual({name: 'Tony Stark', age: 12})
+    })
+
+    it('should still restore currentStep, currentMeta, direction and path like the default behavior', () => {
+      const store = configurePreserveStore()
+
+      store.next()
+      store.back()
+
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+      expect(store.direction()).toBe('backward')
+      expect(store.path()).toEqual([])
+    })
+
+    it('should fail silently once the path is exhausted, without touching data', () => {
+      const store = configurePreserveStore()
+
+      store.next({name: 'Tony Stark'})
+      store.back()
+      store.back()
+
+      expect(store.error()).toBeNull()
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.data()).toEqual({name: 'Tony Stark'})
     })
   })
 
@@ -977,7 +1096,6 @@ describe('workflowStoreFactory', () => {
       store = configureStore(defaultSkipConfig, Step.START, {age: 12})
       store.skip()
       expect(store.currentStep()).toBe(Step.END)
-      console.log(store.path())
       expect(store.path().findIndex(s => s.step === Step.MINOR_CONFIRMATION)).not.toBe(-1)
     })
 
@@ -1067,6 +1185,91 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.MIDDLE)
       store.next()
       expect(store.currentStep()).toBe(Step.MINOR_CONFIRMATION)
+    })
+  })
+
+  describe('reset', () => {
+    it('should reset the workflow to the initial state', () => {
+      const store = configureStore()
+
+      store.next({name: 'Tony Stark'})
+      store.next({age: 32})
+
+      expect(store.data()).toEqual({name: 'Tony Stark', age: 32})
+      expect(store.currentStep()).toBe(Step.END)
+      expect(store.currentMeta()).toEqual({title: 'End'})
+      expect(store.path()).toEqual([{
+        step: Step.START, data: {name: 'Tony Stark'}, meta: {title: 'Start'}
+      }, {
+        step: Step.MIDDLE, data: {name: 'Tony Stark', age: 32}, meta: null
+      }])
+
+      store.reset()
+
+      expect(store.data()).toEqual({})
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+      expect(store.path()).toEqual([])
+    })
+
+    it('should reset error state when resetting the workflow', () => {
+      const store = configureStore({
+        [Step.START]: {transitions: [{target: Step.MIDDLE, canActivate: () => false}]}
+      })
+      store.next()
+
+      expect(store.error()).toBe('No transition found')
+
+      store.reset()
+
+      expect(store.error()).toBeNull()
+    })
+
+    it('should reset isFinished when resetting the workflow', () => {
+      const store = configureStore()
+      store.next()
+      store.next()
+      store.next()
+
+      expect(store.isFinished()).toBe(true)
+      store.reset()
+
+      expect(store.isFinished()).toBe(false)
+    })
+
+    it('should reset the workflow to the initial state when preserveDataOnBack is true', () => {
+      const store = configurePreserveStore(defaultConfig, Step.START, {})
+      store.next({name: 'Peter Parker'})
+      store.next({age: 18})
+
+      store.back()
+      store.back()
+      expect(store.data()).toEqual({name: 'Peter Parker', age: 18})
+
+      store.reset()
+
+      expect(store.data()).toEqual({})
+    })
+
+    it('should reset the direction to forward when resetting the workflow', () => {
+      const store = configureStore()
+
+      store.next()
+      expect(store.direction()).toBe('forward')
+      store.back()
+      expect(store.direction()).toBe('backward')
+      store.reset()
+      expect(store.direction()).toBe('forward')
+    })
+
+    it('should reset data to the initial data given in the workflow factory', () => {
+      const store = configureStore(defaultConfig, Step.START, {name: 'Peter Parker'})
+
+      store.next({age: 18})
+      expect(store.data()).toEqual({name: 'Peter Parker', age: 18})
+
+      store.reset()
+      expect(store.data()).toEqual({name: 'Peter Parker'})
     })
   })
 })

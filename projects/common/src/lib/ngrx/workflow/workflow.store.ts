@@ -83,13 +83,14 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
         next(data?: Partial<T>): void {
           if (state.isFinished()) return
 
-          // Collect the current state for path
           const currentStep = state.currentStep()
+          if (currentStep === undefined || currentStep === null) return this.setError('No current step found')
+
+          if (data) patchState(state, {data: {...state.data(), ...data}})
+
+          // Collect the current state for path
           const currentMeta = state.currentMeta()
           const currentData = state.data()
-
-          if (currentStep === undefined || currentStep === null) return this.setError('No current step found')
-          if (data) patchState(state, {data: {...state.data(), ...data}})
 
           const config = transitionConfig[currentStep]
           if (config === undefined) return this.setError('No transition config found for current step')
@@ -132,13 +133,14 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
           const target = path[path.length - 1]
 
           patchState(state, {
-            data: target.data,
             currentStep: target.step,
             currentMeta: target.meta,
             direction: 'backward',
             path: path.slice(0, -1),
             error: null
           })
+
+          if (!options.preserveDataOnBack) patchState(state, {data: target.data})
         },
         skip(data?: Partial<T>): void {
           patchState(state, {isSkipping: true})
@@ -146,6 +148,9 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
         },
         setError(error: string): void {
           patchState(state, {error})
+        },
+        reset(): void {
+          patchState(state, initialState)
         }
       }
     })
@@ -195,7 +200,10 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
    * {@link workflowStoreFactory} is what guarantees one, so it is read back defensively here.
    */
   function positionOf(meta: M | null | undefined): Position | null {
-    return (meta as { position?: Position } | null | undefined)?.position ?? null
+    const position = (meta as { position?: Position | number } | null | undefined)?.position
+    if (position === undefined || position === null) return null
+    if (typeof position === 'number') return {order: position, label: ''}
+    return position
   }
 }
 
