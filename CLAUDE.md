@@ -75,6 +75,8 @@ npx ng test common --include='**/workflow.store.spec.ts' --watch=false
 
 - Branch off `develop`; open PRs against `develop`. CI (test, lint, build) must pass before merge. On
   merge to `release`, the library publishes to npm and Storybook deploys to GitHub Pages / Docker.
+- Commit in small, sensible bits: one logical change per commit. Don't bundle unrelated changes (e.g. a
+  feature plus an unrelated lint fix) into a single commit.
 - Commit messages are a **single-line subject only** — gitmoji + concise imperative description + the
   GitHub issue number in parentheses, nothing else (no body, no `Co-Authored-By` trailer):
   ```
