@@ -1,6 +1,6 @@
 {
   "name": "@no1hardy/angular-common",
-  "version": "21.2.0",
+  "version": "21.2.1",
   "description": "Reusable Angular components, directives, services, and TypeScript utilities for common functionalities.",
   "author": "NoOneHardy",
   "repository": {
