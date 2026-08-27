@@ -739,10 +739,10 @@ describe('workflowStoreFactory', () => {
       const store = configureStore()
 
       store.next({age: 25})
-      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}])
+      expect(store.path()).toEqual([{step: Step.START, data: {age: 25}, meta: {title: 'Start'}}])
 
       store.next({name: 'Tony Stark'})
-      expect(store.path()).toEqual([{step: Step.START, data: {}, meta: {title: 'Start'}}, {step: Step.MIDDLE, data: {age: 25}, meta: null}])
+      expect(store.path()).toEqual([{step: Step.START, data: {age: 25}, meta: {title: 'Start'}}, {step: Step.MIDDLE, data: {age: 25, name: 'Tony Stark'}, meta: null}])
     })
 
     it('should push onto path when a transition finishes the workflow', () => {
@@ -809,14 +809,26 @@ describe('workflowStoreFactory', () => {
       expect(store.currentStep()).toBe(Step.START)
     })
 
-    it('should reset data to previous state', () => {
+    it('should reset data to previous state after the changes of the previous states', () => {
       const store = configureStore()
 
       expect(store.data()).toEqual({})
       store.next({name: 'Tony Stark'})
       store.back()
 
+      expect(store.data()).toEqual({name: 'Tony Stark'})
+    })
+
+    it('should only reset new data to previous state after the changes of the previous states', () => {
+      const store = configureStore()
+
       expect(store.data()).toEqual({})
+      store.next({name: 'Tony Stark'})
+      store.next({age: 12})
+      store.back()
+      store.back()
+
+      expect(store.data()).toEqual({name: 'Tony Stark'})
     })
 
     it('should reset meta to previous state', () => {
