@@ -196,7 +196,10 @@ export function createWorkflowStore<T extends object, S extends WorkflowStep, M 
    * {@link workflowStoreFactory} is what guarantees one, so it is read back defensively here.
    */
   function positionOf(meta: M | null | undefined): Position | null {
-    return (meta as { position?: Position } | null | undefined)?.position ?? null
+    const position = (meta as { position?: Position | number } | null | undefined)?.position
+    if (position === undefined || position === null) return null
+    if (typeof position === 'number') return {order: position, label: ''}
+    return position
   }
 }
 

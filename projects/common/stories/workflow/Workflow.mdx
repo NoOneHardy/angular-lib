@@ -554,7 +554,9 @@ export class OnboardingComponent {
 With the option set, `meta` is mandatory on every step and has to carry a `position` — the factory takes a
 `PositionedTransitionConfig<T, S, M>` instead of a `TransitionConfig<T, S, M>` then, so a step without a position
 is a compile error instead of a gap in the progress display. A position is a `{order: number, label: string}` —
-`order` is what gives the workflow an order to sort by, and `label` is the human-readable text for it:
+`order` is what gives the workflow an order to sort by, and `label` is the human-readable text for it. A step
+without a label can declare `position` as a bare `number` instead — the store treats it as shorthand for
+`{order, label: ''}`:
 
 ```html
 <p>Step {{ store.currentIndex() + 1 }} of {{ store.totalPositions() }}: {{ store.currentPosition()?.label }}</p>

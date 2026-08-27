@@ -317,7 +317,22 @@ describe('workflowStoreFactory', () => {
       expect(store.totalPositions()).toBe(3)
     })
 
-    it('should sort the positions ascending, independent of the config order', () => {
+    it('should expose every position of the config, without duplicates including numbers only positions', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {transitions: [], meta: {position: {order: 10, label: 'Start'}, title: 'Start'}},
+        [Step.MIDDLE]: {transitions: [], meta: {position: 11, title: 'Middle'}},
+        [Step.END]: {transitions: [], meta: {position: {order: 30, label: 'End'}, title: 'End'}}
+      })
+
+      expect(store.positions()).toEqual([
+        {order: 10, label: 'Start'},
+        {order: 11, label: ''},
+        {order: 30, label: 'End'},
+      ])
+      expect(store.totalPositions()).toBe(3)
+    })
+
+    it('should sort the positions numerically (objects only)', () => {
       const store = configurePositionedStore(Step.START, {
         [Step.START]: {
           meta: {title: 'Start', position: {order: 30, label: 'Start'}},
@@ -340,7 +355,7 @@ describe('workflowStoreFactory', () => {
       ])
     })
 
-    it('should sort the positions numerically', () => {
+    it('should sort the positions numerically (numbers only) ', () => {
       const store = configurePositionedStore(Step.START, {
         [Step.START]: {
           meta: {title: 'Start', position: {order: 2, label: 'Start'}},
@@ -363,6 +378,29 @@ describe('workflowStoreFactory', () => {
       ])
     })
 
+    it('should sort the positions numerically (mixed)', () => {
+      const store = configurePositionedStore(Step.START, {
+        [Step.START]: {
+          meta: {title: 'Start', position: 30},
+          transitions: [{target: Step.MIDDLE, default: true}]
+        },
+        [Step.MIDDLE]: {
+          meta: {title: 'Middle', position: {order: 10, label: 'Middle'}},
+          transitions: [{target: Step.END, default: true}]
+        },
+        [Step.END]: {
+          meta: {title: 'End', position: {order: 20, label: 'End'}},
+          transitions: [{finish: true, default: true}]
+        }
+      })
+
+      expect(store.positions()).toEqual([
+        {order: 10, label: 'Middle'},
+        {order: 20, label: 'End'},
+        {order: 30, label: ''}
+      ])
+    })
+
     it('should resolve currentIndex against the sorted positions', () => {
       const store = configurePositionedStore(Step.START, {
         [Step.START]: {
@@ -370,7 +408,7 @@ describe('workflowStoreFactory', () => {
           transitions: [{target: Step.MIDDLE, default: true}]
         },
         [Step.MIDDLE]: {
-          meta: {title: 'Middle', position: {order: 20, label: 'Middle'}},
+          meta: {title: 'Middle', position: 20},
           transitions: [{target: Step.END, default: true}]
         },
         [Step.END]: {
@@ -383,7 +421,7 @@ describe('workflowStoreFactory', () => {
 
       store.next()
 
-      expect(store.currentPosition()).toEqual({order: 20, label: 'Middle'})
+      expect(store.currentPosition()).toEqual({order: 20, label: ''})
       expect(store.currentIndex()).toBe(1)
     })
 
