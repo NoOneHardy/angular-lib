@@ -927,6 +927,71 @@ describe('workflowStoreFactory', () => {
     })
   })
 
+  describe('back with preserveDataOnBack', () => {
+    function configurePreserveStore(
+      config: Partial<TransitionConfig<WizardData, Step, StepMeta>> = defaultConfig,
+      initialStep: Step = Step.START,
+      initialData: Partial<WizardData> = {}
+    ) {
+      return TestBed.configureTestingModule({
+        providers: [
+          {
+            provide: workflowStore,
+            useClass: workflowStoreFactory<WizardData, Step, StepMeta>(
+              config as TransitionConfig<WizardData, Step, StepMeta>,
+              initialStep,
+              {initialData, preserveDataOnBack: true}
+            )
+          }
+        ]
+      }).inject<WorkflowStore<WizardData, Step>>(workflowStore)
+    }
+
+    it('should not reset data on a single back() (same as default behavior)', () => {
+      const store = configurePreserveStore()
+
+      store.next({name: 'Tony Stark'})
+      store.back()
+
+      expect(store.data()).toEqual({name: 'Tony Stark'})
+    })
+
+    it('should keep data added on a later step when going back past the step it was added on', () => {
+      const store = configurePreserveStore()
+
+      store.next({name: 'Tony Stark'})
+      store.next({age: 12})
+      store.back()
+      store.back()
+
+      expect(store.data()).toEqual({name: 'Tony Stark', age: 12})
+    })
+
+    it('should still restore currentStep, currentMeta, direction and path like the default behavior', () => {
+      const store = configurePreserveStore()
+
+      store.next()
+      store.back()
+
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.currentMeta()).toEqual({title: 'Start'})
+      expect(store.direction()).toBe('backward')
+      expect(store.path()).toEqual([])
+    })
+
+    it('should fail silently once the path is exhausted, without touching data', () => {
+      const store = configurePreserveStore()
+
+      store.next({name: 'Tony Stark'})
+      store.back()
+      store.back()
+
+      expect(store.error()).toBeNull()
+      expect(store.currentStep()).toBe(Step.START)
+      expect(store.data()).toEqual({name: 'Tony Stark'})
+    })
+  })
+
   describe('setError', () => {
     it('should set the error message and flips hasError', () => {
       const store = configureStore()

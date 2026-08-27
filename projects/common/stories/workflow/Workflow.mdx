@@ -180,6 +180,15 @@ steps as enum and pass the enum type as `S` to get type safety and autocompletio
       <code>true</code>, every step has to declare a <code>meta.position</code> and the store gains the four position
       signals; with <code>false</code> (the default) it doesn't carry them at all.</td>
   </tr>
+  <tr>
+    <td><code>preserveDataOnBack</code></td>
+    <td><code>boolean</code></td>
+    <td>Controls whether <a href="#back"><code>back()</code></a> resets <code>data</code> to the popped
+      <code>path</code> entry's snapshot. With <code>false</code> (the default), it does — data merged in by
+      steps further down <code>path</code> is dropped, as described under <code>back()</code>. With
+      <code>true</code>, <code>data</code> is left untouched by <code>back()</code>, so anything merged in
+      after the step being returned to stays, even once the user goes past it.</td>
+  </tr>
   </tbody>
 </table>
 
@@ -331,12 +340,20 @@ rejecting invalid input. The demo above validates each step locally for exactly 
 
 ### `back()`
 
-Resets `isFinished` to `false`, then pops the last entry off `path` and restores `currentStep`, `data` and
-`currentMeta` to exactly what they were in that entry — i.e. the state as it stood *after* that step's own
-`next(data)` call merged its data in, so the values set while leaving the step are still there when
-returning to it. Data merged in by later steps (further down `path`) is dropped automatically when backing
-out past them, so it can't leak into a different branch if the user takes a different path forward next
-time; there's no need to name keys to reset by hand.
+Resets `isFinished` to `false`, then pops the last entry off `path` and restores `currentStep` and
+`currentMeta` to exactly what they were in that entry.
+
+By default (`preserveDataOnBack: false`), `data` is restored the same way — to exactly what it was in
+that entry, i.e. the state as it stood *after* that step's own `next(data)` call merged its data in, so
+the values set while leaving the step are still there when returning to it. Data merged in by later steps
+(further down `path`) is dropped automatically when backing out past them, so it can't leak into a
+different branch if the user takes a different path forward next time; there's no need to name keys to
+reset by hand.
+
+With `preserveDataOnBack: true`, `data` is left untouched instead — `back()` only moves `currentStep` and
+`currentMeta`, so data merged in by later steps survives even once the user backs out past the step that
+was current when it was added. Reach for this when a later step's answer shouldn't be thrown away just
+because the user revisited an earlier one — e.g. a summary step's edits.
 
 Since a transition with `finish: true` pushes onto `path` just like one with a `target` (see
 [`next()`](#nextdata-partialt) above), calling `back()` on a finished workflow reopens it: `isFinished`
