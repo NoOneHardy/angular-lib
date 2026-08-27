@@ -388,6 +388,15 @@ Sets `error` directly. `next()` and `back()` call this internally; it's exposed 
 validation needs to report a failure that isn't naturally expressed as "no transition matched"
 (e.g. an async check performed before calling `next()`).
 
+### `reset()`
+
+Restores every piece of state — `data`, `currentStep`, `currentMeta`, `direction`, `path`, `error`,
+`isFinished` and `isSkipping` — to exactly what it was right after the store was created, including
+`initialData` if the factory was given one. Unlike `back()`, this ignores `path` entirely and jumps
+straight back to the start in one step, regardless of `preserveDataOnBack` or how far into the
+workflow the user got. Reach for it to let a user restart a wizard from scratch, or to reuse the same
+store instance across multiple runs of the same workflow.
+
 ## Transitions
 
 Each step in a `TransitionConfig<T, S, M>` maps to a `{transitions, meta?}` entry. `transitions` is
